@@ -1,7 +1,7 @@
 
 | name                | description                                                  | license                                     |
 | ------------------- | ------------------------------------------------------------ | ------------------------------------------- |
-| agent-skills-helper | 通用 Agent Skills 助手：当用户明确指定使用skills-helper时提供以下帮助->按需读取资料库，指导构建、优化与执行技能工作流 | Proprietary. LICENSE.txt has complete terms |
+| agent-skills-helper | Skills 工作流助手：当用户提出 Skill 编写、结构设计、脚本执行、API 封装、触发失败排查或跨工具迁移等问题时调用，按需加载 references 并给出完美的解决方案 | Proprietary. LICENSE.txt has complete terms |
 
 
 
@@ -103,6 +103,7 @@ Helper 的职责是“精准支持”，而不是“批量生产”。
 | 4.How To Createing Scripts.md          | Scripts 环境与工程化详解  |
 | 5.Skills Example.md                    | 常见 Skill 模板参考       |
 | 6.Scripts Examples.md                  | 常见Scripts 实战代码案例  |
+| 7.LICENSE-Apache-2.0.txt               | 开源协议直接cp到新的项目  |
 
 在线参考附页:
 
@@ -142,7 +143,7 @@ Helper 的职责是“精准支持”，而不是“批量生产”。
 
 当用户需要执行型能力时：
 
-- 指导 venv/pnpm 安装方式  
+- 指导 .venv/pnpm 安装方式  
 - 输出 requirements.txt/pyproject.toml/uv.lock/package.json/pnpm-lock.yaml  
 - 提供脚本输入输出协议  
 - 提供 retry/polling/timeout 模式  
