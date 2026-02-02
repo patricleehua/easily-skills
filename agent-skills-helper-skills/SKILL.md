@@ -1,7 +1,7 @@
 
 | name                | description                                                  | license                                     |
 | ------------------- | ------------------------------------------------------------ | ------------------------------------------- |
-| agent-skills-helper | 通用 Agent Skills 助手：当用户明确指定使用该助手时提供以下帮助->按需读取资料库，指导构建、优化与执行技能工作流 | Proprietary. LICENSE.txt has complete terms |
+| agent-skills-helper | 通用 Agent Skills 助手：当用户明确指定使用skills-helper时提供以下帮助->按需读取资料库，指导构建、优化与执行技能工作流 | Proprietary. LICENSE.txt has complete terms |
 
 
 
