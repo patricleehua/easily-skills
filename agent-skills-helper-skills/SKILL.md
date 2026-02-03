@@ -5,8 +5,6 @@
 
 
 
-
-
 # Skill: agent-skills-helper
 
 ## Metadata
@@ -45,7 +43,7 @@
 ### Skills 设计与构建
 
 1. 用户想创建新的 Skill  
-2. 用户需要编写 `skill.md` 的 Metadata 与 Instructions  
+2. 用户需要编写 `SKILL.md` 的 Metadata 与 Instructions  
 3. 用户需要生成可复用模板或目录结构  
 
 ### Skills 使用与执行支持
@@ -133,7 +131,8 @@ Helper 的职责是“精准支持”，而不是“批量生产”。
 
 ### 2. Skills 编写与优化辅助
 
-- 输出最小可用 skill.md  
+- 输出标准格式的Metadata
+- 输出最小可用 SKILL.md  
 - 优化 prompt 层级与渐进披露策略  
 - 增强可维护性与可迁移性  
 
