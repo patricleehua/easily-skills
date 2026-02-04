@@ -1,22 +1,20 @@
+---
+name: agent-skills-helper
+description: Use this skill when the user asks to design, implement, debug, or migrate Skills workflows, including:
+- Writing or structuring a new Skill (Skill.md, schema, triggers)
+- Designing execution scripts or tool-calling logic
+- Wrapping external APIs into Skill actions
+- Troubleshooting Skill trigger failures or misfires
+- Migrating Skills across agents, tools, or platforms
+**Do NOT use for general coding questions unrelated to Skills.**
+ This assistant specializes in workflow-level Skill engineering, trigger semantics, and tool integration.
+license: Complete terms in LICENSE.txt
+---
 
-| name                | description                                                  | license                                     |
-| ------------------- | ------------------------------------------------------------ | ------------------------------------------- |
-| agent-skills-helper | Skills 工作流助手：当用户提出 Skill 编写、结构设计、脚本执行、API 封装、触发失败排查或跨工具迁移等问题时调用，按需加载 references 并给出完美的解决方案 | Proprietary. LICENSE.txt has complete terms |
 
 
 
 # Skill: agent-skills-helper
-
-## Metadata
-
-- **Version**: 1.0.0  
-- **Category**: Agent Skills Helper / Workflow Companion  
-- **Tags**: `agent-skills`, `helper`, `documentation`, `skill-authoring`, `workflow`, `scripts`, `mcp`  
-- **Author**: Patrick Lee  
-- **Last Updated**: 2026-02-02  
-- **Compatible With**: Claude Code / Codex / Cursor / OpenCode (All Agent Skills Supported Tools)
-
----
 
 ## Overview
 
@@ -216,20 +214,10 @@ Helper 的职责是“精准支持”，而不是“批量生产”。
 
 ## Safety & Limitations
 
+- 元数据编写必须符合规范
+
 - 不自动删除或覆盖用户文件
 - 不批量创建 Skills 包
 - 不在未确认需求前输出大量模板
 - API Key 必须使用 `.env` 管理
 - Scripts 必须明确依赖与执行方式
-
-------
-
-## License
-
-Proprietary. See LICENSE.txt for complete terms.
-
-------
-
-## Contribution & Feedback
-
-如需改进此 skill 或报告问题，请联系维护团队或 Skill 作者。

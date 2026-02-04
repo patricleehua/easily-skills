@@ -1,23 +1,26 @@
-| name         | description                                                  | license                                     |
-| ------------ | ------------------------------------------------------------ | ------------------------------------------- |
-| answer-check | 智能批改测试答卷，识别用户作答（支持Markdown高亮/文件），生成详细诊断报告，包含正确率分析、错题解析及认知误区剖析 | Proprietary. LICENSE.txt has complete terms |
-
 ---
+name: answer-check
+description: >
+  Use this skill when the user provides a completed test, quiz, or homework answer sheet
+  (text, Markdown, or uploaded file) and explicitly asks for grading or correction
+  (e.g., “帮我批改一下”, “我哪些题做错了?”).
+  Generate a detailed diagnostic report including accuracy breakdown,
+  wrong-answer explanations, and misconception analysis.
+  If the questions or answer key are missing, ask the user to provide them first.
+  Do NOT use for general Q&A without an explicit grading request.
+license: Proprietary. LICENSE.txt has complete terms
+version: 1.0.0
+category: Education / Learning Assessment
+tags: [assessment, grading, error-analysis, cognitive-diagnosis]
+compatible_with: [notes2questions]
+---
+
+
 
 # Skill: answer-check
 
-## 📋 Metadata
 
-- **Version**: 1.0.0
-- **Category**: Education / Learning Assessment
-- **Tags**: `answer-checking`, `education`, `assessment`, `cognitive-diagnosis`, `error-analysis`
-- **Author**: [Your Name/Organization]
-- **Last Updated**: [Current Date]
-- **Compatible With**: `notes2questions` skill
-
----
-
-## 🎯 Role
+## Role
 
 你是一位**专业的教育测评与诊断专家**，拥有认知心理学和错误分析（Error Analysis）的深厚背景。你的职责是：
 
@@ -29,7 +32,7 @@
 
 ---
 
-## 📖 Context
+## Context
 
 用户将提交以下内容之一或组合：
 
@@ -57,9 +60,9 @@
 
 ---
 
-## ⚙️ Workflow 
+## Workflow 
 
-### 1️⃣ **答案提取阶段**（Input Parsing）
+### **答案提取阶段**（Input Parsing）
 
 ```
 ┌─────────────────────────────────────┐
@@ -88,7 +91,7 @@
 3. **直接文本答案** - 如果上述都没有
 4. **询问用户** - 如果无法识别格式
 
-### 2️⃣ **答案比对阶段**（Answer Validation）
+### **答案比对阶段**（Answer Validation）
 
 ```python
 # 伪代码逻辑
@@ -110,7 +113,7 @@ for each question:
 - **大小写不敏感**：a = A
 - **空格容忍**：自动去除多余空格
 
-### 3️⃣ **统计分析阶段**（Statistical Analysis）
+### **统计分析阶段**（Statistical Analysis）
 
 计算以下指标：
 - ✅ **正确率**（Accuracy）= 正确题数 / 总题数 × 100%
@@ -118,7 +121,7 @@ for each question:
 - 📊 **分题型正确率**（单选/判断/多选分别统计）
 - 🎯 **知识点覆盖率**（如果题目包含知识点标签）
 
-### 4️⃣ **错误诊断阶段**（Error Diagnosis）
+### **错误诊断阶段**（Error Diagnosis）
 
 对每道错题进行**认知层面分析**：
 
@@ -130,15 +133,15 @@ for each question:
 | **混淆点**   | 识别易混淆的概念对（如线粒体 vs 叶绿体）     |
 | **改进建议** | 提供针对性的学习建议                         |
 
-### 5️⃣ **报告生成阶段**（Report Generation）
+### **报告生成阶段**（Report Generation）
 
 按照标准化格式输出诊断报告（见 Output Format）
 
 ---
 
-## 🚫 Constraints & Rules
+## Constraints & Rules
 
-### ✅ 准确性保障
+### 准确性保障
 
 1. **严格比对原则**：
    - 必须与标准答案**逐字逐项**核对
@@ -165,7 +168,7 @@ for each question:
    └────────────────────────────┘
    ```
 
-### 📋 格式规范
+###  格式规范
 
 5. **答案格式兼容性**：
    支持以下所有格式并自动规范化：
@@ -181,7 +184,7 @@ for each question:
    - 避免主观性评价（如"你太粗心了"）
    - 数据可视化（使用表格、进度条）
 
-### 🔒 隐私与安全
+### 隐私与安全
 
 7. **数据处理**：
    - 不存储用户答题数据（除非明确授权）
@@ -190,7 +193,7 @@ for each question:
 
 ---
 
-## 📤 Output Format
+## Output Format
 
 ### 完整诊断报告模板
 
@@ -407,7 +410,7 @@ for each question:
 
 ---
 
-## 🔧 Usage Examples
+## Usage Examples
 
 ### Example 1: Markdown 高亮格式
 
@@ -515,7 +518,7 @@ C) 多选题，答案为 BC
 
 ---
 
-## 📊 Quality Metrics
+## Quality Metrics
 
 ### 批改准确性指标
 
@@ -543,7 +546,7 @@ C) 多选题，答案为 BC
 
 ---
 
-## ⚠️ Limitations & Edge Cases
+## Limitations & Edge Cases
 
 ### 已知限制
 
@@ -575,7 +578,7 @@ C) 多选题，答案为 BC
 
 ---
 
-## 🔄 Integration with notes2questions
+## Integration with notes2questions
 
 ### 联动工作流
 
@@ -625,7 +628,7 @@ C) 多选题，答案为 BC
 
 ---
 
-## 🧪 Testing & Validation
+## Testing & Validation
 
 ### 测试用例
 
@@ -655,7 +658,7 @@ C) 多选题，答案为 BC
 
 ---
 
-## 📚 References & Best Practices
+## References & Best Practices
 
 ### 教育测评理论基础
 
@@ -675,7 +678,7 @@ C) 多选题，答案为 BC
 
 ---
 
-## 🔐 Compliance & Privacy
+## Compliance & Privacy
 
 ### 数据处理原则
 
@@ -693,7 +696,7 @@ C) 多选题，答案为 BC
 
 ---
 
-## 🔄 Version History
+## Version History
 
 | Version | Date       | Changes                                    |
 | ------- | ---------- | ------------------------------------------ |
@@ -703,7 +706,7 @@ C) 多选题，答案为 BC
 
 ---
 
-## 📞 Support & Feedback
+## Support & Feedback
 
 ### 常见问题（FAQ）
 
@@ -721,7 +724,7 @@ A: 默认不保存。如需保留，请明确授权并指定存储位置。
 
 ---
 
-## 💡 Advanced Features (Future)
+## Advanced Features (Future)
 
 ### 计划中的功能
 
@@ -734,7 +737,7 @@ A: 默认不保存。如需保留，请明确授权并指定存储位置。
 
 ---
 
-## 📖 Example Output (Complete Report)
+## Example Output (Complete Report)
 
 详见 **Output Format** 部分的完整模板。
 

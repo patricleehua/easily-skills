@@ -1,28 +1,32 @@
-| name            | description                                                  | license                                     |
-| --------------- | ------------------------------------------------------------ | ------------------------------------------- |
-| notes2questions | 将学习笔记智能转换为复习测试题（单选、判断、多选），基于认知心理学原理帮助巩固记忆 | Proprietary. LICENSE.txt has complete terms |
-
 ---
+name: notes2questions
+description: >
+  Use this skill when the user provides study notes or learning material
+  and explicitly asks to generate review questions or a practice quiz
+  (e.g., “帮我出几道复习题”, “把笔记转换成测试题”).
+  Create a set of single-choice, multiple-choice, and true/false questions,
+  including answers and brief explanations.
+  Design questions to support active recall and spaced repetition.
+  Do NOT use for general summarization or unrelated Q&A.
+license: Proprietary. LICENSE.txt has complete terms
+version: 1.0.0
+category: Education / Learning Assessment
+tags: [quiz-generation, active-recall, spaced-repetition, education]
+last_update: 2026-02-04
+---
+
+
 
 # Skill: notes2questions
 
-## 📋 Metadata
 
-- **Version**: 1.0.0
-- **Category**: Education / Learning Assessment
-- **Tags**: `cognitive-psychology`, `education`, `quiz-generation`, `spaced-repetition`
-- **Author**: [Your Name/Organization]
-- **Last Updated**: [Current Date]
-
----
-
-## 🎯 Role
+## Role
 
 你是一位拥有认知心理学背景的**高级教育评估专家**。你擅长通过"温故而知新"的教育理念，对用户的学习笔记进行深度分析，并设计出高质量的复习题。你的目标是帮助用户巩固记忆、查漏补缺。
 
 ---
 
-## 📖 Context
+## Context
 
 用户将提供一段学习笔记或文本内容。你需要基于这些内容，生成一套包含**单选题**、**判断题**和**多选题**的测试卷。
 
@@ -35,7 +39,7 @@
 
 ---
 
-## ⚙️ Workflow 
+## Workflow 
 
 1.  **深度分析**：仔细阅读用户提供的文本，提取核心概念、定义、因果关系和关键数据。
 2.  **考点提取**：识别容易混淆或被忽略的知识点。
@@ -45,7 +49,7 @@
 
 ---
 
-## 🚫 Constraints & Rules
+## Constraints & Rules
 
 ### 核心原则
 
@@ -77,7 +81,7 @@
 
 ---
 
-## 📤 Output Format
+## Output Format
 
 请严格遵守以下 Markdown 结构：
 
@@ -176,7 +180,7 @@
 
 ---
 
-## 🔧 Usage Examples
+## Usage Examples
 
 ### Example 1: 基础用法
 
@@ -204,7 +208,7 @@
 
 ---
 
-## 📊 Quality Metrics
+## Quality Metrics
 
 **好题目的标准**：
 - ✅ **相关性**: 100% 基于提供的笔记内容
@@ -214,7 +218,7 @@
 
 ---
 
-## ⚠️ Limitations
+## Limitations
 
 1. **内容依赖性**: 如果笔记内容过于简短（<100字），可能无法生成足够多样化的题目
 2. **语言限制**: 当前主要支持中文内容，其他语言需单独适配
@@ -223,13 +227,7 @@
 
 ---
 
-## 🔄 Version History
 
-| Version | Date       | Changes         |
-| ------- | ---------- | --------------- |
-| 1.0.0   | YYYY-MM-DD | Initial release |
-
----
 
 ## References
 

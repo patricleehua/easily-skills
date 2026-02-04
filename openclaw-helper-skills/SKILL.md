@@ -1,28 +1,24 @@
-| name            | description                                                  | license                                     |
-| --------------- | ------------------------------------------------------------ | ------------------------------------------- |
-| openclaw-helper | 专为解决用户在使用 OpenClaw/ClawBot/BoltBot 过程中遇到的问题而设计的动态辅助工具。优先检索本地 docs，找不到则联网查询，再通过交互排查并引导用户补充信息，最终提供可执行解决方案。 | Proprietary. LICENSE.txt has complete terms |
-
 ---
+name: openclaw-helper
+description: >
+  Use this skill when the user needs troubleshooting or configuration help
+  with OpenClaw / ClawBot / BoltBot (e.g., installation failures, runtime errors,
+  trigger misfires, bot integration, MCP connection issues).
+  Always check local OpenClaw docs first; if not found, perform a web search.
+  Ask follow-up questions when needed and provide step-by-step executable fixes.
+  Do NOT use for general coding questions unrelated to OpenClaw.
+license: Proprietary. LICENSE.txt has complete terms
+version: 1.0.0
+category: Assessment / Support
+tags: [openclaw, clawbot, boltb ot, troubleshooting, docs]
+author: Nomor Internal
+last_update: 2026-02-01
+---
+
+
+
 
 # Skill: openclaw-helper
-
-## 📋 Metadata
-
-**Name**: openclaw-helper
-
-**Version**: 1.0.0
-
-**Category**: Assessment / Support
-
-**Purpose**: Documentation-driven troubleshooting & guidance for OpenClaw ecosystem
-
-**Author**: Nomor Internal
-
-**Last Updated**: 2026-02-01
-
----
-
-
 
 ## Description
 
