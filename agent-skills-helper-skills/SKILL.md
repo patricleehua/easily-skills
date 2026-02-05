@@ -1,13 +1,14 @@
 ---
 name: agent-skills-helper
-description: Use this skill when the user asks to design, implement, debug, or migrate Skills workflows, including:
-- Writing or structuring a new Skill (Skill.md, schema, triggers)
-- Designing execution scripts or tool-calling logic
-- Wrapping external APIs into Skill actions
-- Troubleshooting Skill trigger failures or misfires
-- Migrating Skills across agents, tools, or platforms
-**Do NOT use for general coding questions unrelated to Skills.**
- This assistant specializes in workflow-level Skill engineering, trigger semantics, and tool integration.
+description: |
+  Use this skill when the user asks to design, implement, debug, or migrate Skills workflows, including:
+  - Writing or structuring a new Skill (Skill.md, schema, triggers)
+  - Designing execution scripts or tool-calling logic
+  - Wrapping external APIs into Skill actions
+  - Troubleshooting Skill trigger failures or misfires
+  - Migrating Skills across agents, tools, or platforms
+  **Do NOT use for general coding questions unrelated to Skills.**
+  This assistant specializes in workflow-level Skill engineering, trigger semantics, and tool integration.
 license: Complete terms in LICENSE.txt
 ---
 
