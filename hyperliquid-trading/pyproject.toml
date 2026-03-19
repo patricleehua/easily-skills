@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hyperliquid-trading"
+version = "0.1.0"
+description = "Hyperliquid trading CLI tools"
+readme = "SKILL.md"
+requires-python = ">=3.10"
+dependencies = [
+    "hyperliquid-python-sdk>=0.22.0",
+    "click>=8.1.0",
+    "rich>=13.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+hl = "scripts.cli:main"
+
+[tool.setuptools]
+packages = ["scripts"]
+
+[tool.uv]
+dev-dependencies = [
+    "ruff>=0.6.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
