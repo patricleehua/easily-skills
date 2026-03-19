@@ -27,9 +27,11 @@ A powerful command-line trading tool for Hyperliquid DEX, built with Python SDK.
 - **Account Management**: Balance, positions, orders, trade history, funding fees
 - **Trading Operations**: Place/cancel/modify orders, market/limit orders
 - **Leverage Management**: Adjust leverage, margin operations (cross/isolated)
+- **Staking**: View validators, delegate/undelegate HYPE, track rewards
 - **Transfers**: Internal transfers, cross-chain withdrawals
 - **Multi-Account**: Switch between multiple accounts via different `.env` files
 - **Dual Network**: Mainnet and Testnet support
+- **JSON Output**: Raw JSON output with `--json` flag for scripting and automation
 
 ### Installation
 
@@ -96,6 +98,15 @@ uv run hl trade close BTC
 
 # Internal transfer
 uv run hl transfer send <ADDRESS> 100 --token USDC
+
+# JSON output (for scripting)
+uv run hl --json market prices BTC ETH
+uv run hl -j account state
+
+# Staking operations
+uv run hl staking validators -l 10
+uv run hl staking summary
+uv run hl staking delegate <VALIDATOR_ADDRESS> 100
 ```
 
 ### Command Reference
@@ -118,6 +129,19 @@ uv run hl transfer send <ADDRESS> 100 --token USDC
 | `hl account orders` | View open orders |
 | `hl account fills` | View trade history |
 | `hl account funding` | View funding fee history |
+| `hl account rewards` | View staking rewards history |
+
+#### Staking (`staking`)
+
+| Command | Description |
+|---------|-------------|
+| `hl staking validators` | List all validators |
+| `hl staking summary` | View staking summary |
+| `hl staking delegations` | View staking delegations |
+| `hl staking rewards` | View staking rewards |
+| `hl staking history` | View staking history |
+| `hl staking delegate <VALIDATOR> <AMOUNT>` | Delegate HYPE to validator |
+| `hl staking undelegate <VALIDATOR> <AMOUNT>` | Undelegate HYPE from validator |
 
 #### Trading (`trade`)
 
@@ -165,9 +189,13 @@ uv run hl -e .env.prod trade buy BTC 0.01 -p 65000
 ```bash
 hl -e /path/to/.env <command>   # Specify env file
 hl -v <command>                  # Verbose logging
+hl --json <command>              # Output raw JSON (for market/account commands)
+hl -j <command>                  # Output raw JSON (shorthand)
 hl <command> -y                  # Skip confirmation
 hl version                       # Show version
 ```
+
+> **JSON Output Schema**: See [references/output_json_schema.md](references/output_json_schema.md) for detailed JSON structure documentation.
 
 ### Security Notes
 
@@ -191,6 +219,7 @@ hl version                       # Show version
 - **转账功能**: 内部转账、跨链提现
 - **多账号管理**: 通过不同的 `.env` 文件切换账号
 - **双网支持**: 主网(Mainnet)和测试网(Testnet)
+- **JSON输出**: 支持 `--json` 参数输出原始JSON，便于脚本化和自动化
 
 ### 安装
 
@@ -257,6 +286,15 @@ uv run hl trade close BTC
 
 # 内部转账
 uv run hl transfer send <ADDRESS> 100 --token USDC
+
+# JSON输出（便于脚本化）
+uv run hl --json market prices BTC ETH
+uv run hl -j account state
+
+# 质押操作
+uv run hl staking validators -l 10
+uv run hl staking summary
+uv run hl staking delegate <验证者地址> 100
 ```
 
 ### 命令速查
@@ -279,6 +317,19 @@ uv run hl transfer send <ADDRESS> 100 --token USDC
 | `hl account orders` | 查看未成交订单 |
 | `hl account fills` | 查看成交历史 |
 | `hl account funding` | 查看资金费用历史 |
+| `hl account rewards` | 查看质押奖励历史 |
+
+#### 质押 (`staking`)
+
+| 命令 | 说明 |
+|------|------|
+| `hl staking validators` | 查看验证者列表 |
+| `hl staking summary` | 查看质押摘要 |
+| `hl staking delegations` | 查看质押委托 |
+| `hl staking rewards` | 查看质押奖励 |
+| `hl staking history` | 查看质押历史 |
+| `hl staking delegate <验证者> <数量>` | 质押 HYPE |
+| `hl staking undelegate <验证者> <数量>` | 解除质押 |
 
 #### 交易 (`trade`)
 
@@ -326,9 +377,13 @@ uv run hl -e .env.prod trade buy BTC 0.01 -p 65000
 ```bash
 hl -e /path/to/.env <command>   # 指定环境文件
 hl -v <command>                  # 详细日志
+hl --json <command>              # 输出原始JSON（适用于market/account命令）
+hl -j <command>                  # 输出原始JSON（简写）
 hl <command> -y                  # 跳过确认
 hl version                       # 查看版本
 ```
+
+> **JSON输出结构**: 详见 [references/output_json_schema.md](references/output_json_schema.md) 文档。
 
 ### 安全提示
 
@@ -347,6 +402,8 @@ hyperliquid-trading/
 │   ├── cli.py                 # CLI main entry | CLI主程序
 │   ├── config.py              # Configuration management | 配置管理
 │   └── hyperliquid_client.py  # SDK wrapper | SDK封装
+├── references/
+│   └── output_json_schema.md  # JSON output schema | JSON输出结构文档
 ├── .env.example               # Environment template | 环境变量模板
 ├── pyproject.toml             # Project config | 项目配置
 ├── SKILL.md                   # Claude Code skill doc | Claude技能文档

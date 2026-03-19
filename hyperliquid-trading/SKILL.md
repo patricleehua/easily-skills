@@ -1,9 +1,9 @@
 ---
 name: hyperliquid-trading
 description: |
-  Hyperliquid DEX 命令行交易工具。当用户需要查询 Hyperliquid 市场数据、管理账户、执行交易操作、设置杠杆、转账提现时使用此技能。支持主网和测试网。TRIGGER when: 用户提及 Hyperliquid、HL、衍生品形式(美元、石油、黄金、股票)的价格、永续合约交易、加密货币交易 CLI、查询币价、下单交易、查看持仓、资金费率等。
-category: finance 
-tags: [trading, dex, cli, api, derivatives]
+  Hyperliquid DEX 命令行交易工具。当用户需要查询 Hyperliquid 市场数据、管理账户、执行交易操作、设置杠杆、转账提现、HYPE 质押时使用此技能。支持主网和测试网。TRIGGER when: 用户提及 Hyperliquid、HL、衍生品形式(美元、石油、黄金、股票)的价格、永续合约交易、加密货币交易 CLI、查询币价、下单交易、查看持仓、资金费率、HYPE 质押、验证者委托等。
+category: finance
+tags: [trading, dex, cli, api, derivatives, staking]
 ---
 
 # Hyperliquid Trading CLI
@@ -102,6 +102,9 @@ uv run hl account fills [-a <ADDRESS>] [-l 20]
 
 # 资金费用历史
 uv run hl account funding [-a <ADDRESS>] [-l 20]
+
+# 质押奖励历史
+uv run hl account rewards [-a <ADDRESS>]
 ```
 
 ### 交易操作 (trade)
@@ -152,6 +155,33 @@ uv run hl transfer send <DESTINATION> <AMOUNT> [--token USDC]
 
 # 跨链提现（跳过确认）
 uv run hl transfer withdraw <DESTINATION> <AMOUNT> -y
+```
+
+### 质押功能 (staking)
+
+HYPE 代币质押相关命令，支持查询验证者、委托质押、解除质押等操作。
+
+```bash
+# 查看质押摘要（已质押、待解除数量）
+uv run hl staking summary [-a <ADDRESS>]
+
+# 查看验证者列表
+uv run hl staking validators [-l 30] [--sort stake|commission|name]
+
+# 查看质押委托
+uv run hl staking delegations [-a <ADDRESS>]
+
+# 查看质押奖励历史
+uv run hl staking rewards [-a <ADDRESS>] [-l 20]
+
+# 查看质押历史（委托/解除委托记录）
+uv run hl staking history [-a <ADDRESS>] [-l 20]
+
+# 质押 HYPE 到验证者（需要私钥）
+uv run hl staking delegate <VALIDATOR_ADDRESS> <AMOUNT> -y
+
+# 解除质押（需要私钥）
+uv run hl staking undelegate <VALIDATOR_ADDRESS> <AMOUNT> -y
 ```
 
 ## 使用示例
@@ -230,6 +260,31 @@ uv run hl account fills -l 10
 uv run hl account funding -l 20
 ```
 
+### 质押操作
+
+```bash
+# 查看质押摘要
+uv run hl staking summary
+
+# 查看验证者列表（按质押量排序，显示前 10 个）
+uv run hl staking validators -l 10 --sort stake
+
+# 查看验证者列表（按佣金率排序）
+uv run hl staking validators --sort commission
+
+# 查看当前委托
+uv run hl staking delegations
+
+# 查看质押奖励
+uv run hl staking rewards -l 10
+
+# 质押 10 HYPE 到指定验证者
+uv run hl staking delegate 0x1234... 10 -y
+
+# 解除 5 HYPE 质押
+uv run hl staking undelegate 0x1234... 5 -y
+```
+
 ## 安全提示
 
 1. **密钥安全**: 永远不要直接读取配置文件
@@ -258,6 +313,10 @@ uv run hl -e /path/to/.env <command>
 # 启用详细日志
 uv run hl -v <command>
 
+# 输出原始 JSON 格式（适用于 market/account 命令）
+uv run hl --json market prices BTC ETH
+uv run hl -j account state
+
 # 跳过确认（适用于 trade/leverage/transfer 命令）
 uv run hl <command> -y
 uv run hl <command> --yes
@@ -265,6 +324,8 @@ uv run hl <command> --yes
 # 查看版本
 uv run hl version
 ```
+
+> **JSON 输出结构文档**: [references/output_json_schema.md](references/output_json_schema.md)
 
 ## 项目结构
 
@@ -274,6 +335,8 @@ hyperliquid-trading/
 │   ├── cli.py                 # CLI 主程序
 │   ├── config.py              # 配置管理
 │   └── hyperliquid_client.py  # SDK 封装
+├── references/
+│   └── output_json_schema.md  # JSON 输出结构文档
 ├── .env.example               # 环境变量示例
 ├── pyproject.toml             # 项目配置
 └── SKILL.md                   # 本文档

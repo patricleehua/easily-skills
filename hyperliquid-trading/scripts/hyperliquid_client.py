@@ -320,7 +320,9 @@ class HyperliquidClient:
         reduce_only: bool = False,
         cloid: Optional[str] = None,
     ) -> dict:
-        """Place a market order.
+        """Place a market order using IOC with order book pricing.
+
+        Uses order book best bid/ask for more accurate pricing.
 
         Args:
             coin: Asset symbol
@@ -332,11 +334,36 @@ class HyperliquidClient:
         Returns:
             Order result
         """
+        # Get order book for best bid/ask prices
+        book = self.get_l2_book(coin)
+        levels = book.get("levels", [[], []])
+        bids = levels[0] if len(levels) > 0 else []
+        asks = levels[1] if len(levels) > 1 else []
+
+        if is_buy:
+            # For buy, use best ask price + small buffer
+            if not asks:
+                raise ValueError(f"No asks available for {coin}")
+            best_ask = float(asks[0]["px"])
+            limit_px = int(best_ask) + 1  # Just 1 tick above ask
+            ref_price = best_ask
+        else:
+            # For sell, use best bid price - small buffer
+            if not bids:
+                raise ValueError(f"No bids available for {coin}")
+            best_bid = float(bids[0]["px"])
+            limit_px = int(best_bid) - 1  # Just 1 tick below bid
+            if limit_px <= 0:
+                limit_px = 1  # Safety floor
+            ref_price = best_bid
+
+        logger.info(f"Market order: {coin} {'BUY' if is_buy else 'SELL'} {sz} @ ~${ref_price:.2f} (limit: {limit_px})")
+
         return self.place_order(
             coin=coin,
             is_buy=is_buy,
             sz=sz,
-            limit_px=0,  # Market orders don't need limit price
+            limit_px=limit_px,
             order_type={"limit": {"tif": "Ioc"}},
             reduce_only=reduce_only,
             cloid=cloid,
@@ -536,7 +563,7 @@ class HyperliquidClient:
         return result
 
     def close_position(self, coin: str) -> dict:
-        """Close a position for a coin.
+        """Close a position for a coin using IOC market order.
 
         Args:
             coin: Asset symbol
@@ -544,6 +571,134 @@ class HyperliquidClient:
         Returns:
             Close result
         """
-        result = self.exchange.market_close(coin)
+        # Get current position to determine size and direction
+        user_state = self.get_user_state()
+
+        # Handle both dict and list responses
+        if isinstance(user_state, list):
+            positions = user_state
+        elif isinstance(user_state, dict):
+            # Check for nested structure
+            asset_positions = user_state.get("assetPositions")
+            if isinstance(asset_positions, dict):
+                positions = asset_positions.get("values", [])
+            elif isinstance(asset_positions, list):
+                positions = asset_positions
+            else:
+                positions = []
+        else:
+            positions = []
+
+        position = None
+        for pos in positions:
+            pos_data = pos.get("position", pos)
+            if pos_data.get("coin") == coin:
+                position = pos_data
+                break
+
+        if not position:
+            return {"status": "error", "message": f"No position found for {coin}"}
+
+        szi = float(position.get("szi", 0))
+        if szi == 0:
+            return {"status": "error", "message": f"Position for {coin} is already closed"}
+
+        # Close position: sell if long, buy if short (reduce-only)
+        result = self.place_market_order(
+            coin=coin,
+            is_buy=(szi < 0),  # Buy to close short, sell to close long
+            sz=abs(szi),
+            reduce_only=True,
+        )
         logger.info(f"Position closed: {result}")
+        return result
+
+    # ==================== Staking Methods ====================
+
+    def get_validators(self) -> list[dict]:
+        """Get list of all validators.
+
+        Returns:
+            List of validators with name, address, commission, stake info
+        """
+        return self.api.post("/info", {"type": "validatorSummaries"})
+
+    def get_staking_summary(self, address: Optional[str] = None) -> dict:
+        """Get staking summary for an address.
+
+        Args:
+            address: User address (defaults to configured address)
+
+        Returns:
+            Staking summary with delegated, undelegated amounts
+        """
+        addr = address or self.config.account_address
+        return self.api.post("/info", {"type": "delegatorSummary", "user": addr})
+
+    def get_staking_delegations(self, address: Optional[str] = None) -> list[dict]:
+        """Get staking delegations for an address.
+
+        Args:
+            address: User address (defaults to configured address)
+
+        Returns:
+            List of delegations with validator, amount, locked_until_timestamp
+        """
+        addr = address or self.config.account_address
+        return self.api.post("/info", {"type": "delegations", "user": addr})
+
+    def get_staking_rewards(self, address: Optional[str] = None) -> list[dict]:
+        """Get staking rewards history for an address.
+
+        Args:
+            address: User address (defaults to configured address)
+
+        Returns:
+            List of rewards with time, source, total_amount
+        """
+        addr = address or self.config.account_address
+        return self.api.post("/info", {"type": "delegatorRewards", "user": addr})
+
+    def get_staking_history(self, address: Optional[str] = None) -> list[dict]:
+        """Get comprehensive staking history for an address.
+
+        Args:
+            address: User address (defaults to configured address)
+
+        Returns:
+            List of staking history events
+        """
+        addr = address or self.config.account_address
+        return self.api.post("/info", {"type": "delegatorHistory", "user": addr})
+
+    def delegate(self, validator: str, amount: float) -> dict:
+        """Delegate tokens to a validator.
+
+        Args:
+            validator: Validator address
+            amount: Amount to delegate (in HYPE)
+
+        Returns:
+            Delegation result
+        """
+        # Convert amount to wei (HYPE has 18 decimals)
+        wei = int(amount * 10**18)
+        result = self.exchange.token_delegate(validator, wei, is_undelegate=False)
+        logger.info(f"Delegated {amount} HYPE to {validator}: {result}")
+        return result
+
+    def undelegate(self, validator: str, amount: float) -> dict:
+        """Undelegate tokens from a validator.
+
+        Args:
+            validator: Validator address
+            amount: Amount to undelegate (in HYPE)
+
+        Returns:
+            Undelegation result
+        """
+        # Convert amount to wei (HYPE has 18 decimals)
+        wei = int(amount * 10**18)
+        result = self.exchange.token_delegate(validator, wei, is_undelegate=True)
+        logger.info(f"Undelegated {amount} HYPE from {validator}: {result}")
         return result

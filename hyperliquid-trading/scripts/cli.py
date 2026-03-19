@@ -72,14 +72,33 @@ def get_info_client(network: str = "testnet") -> HyperliquidClient:
 @click.group()
 @click.option("--env-file", "-e", help="Path to .env file")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
+@click.option("--json", "output_json", "-j", is_flag=True, help="Output raw JSON")
 @click.pass_context
-def cli(ctx: click.Context, env_file: Optional[str], verbose: bool):
+def cli(ctx: click.Context, env_file: Optional[str], verbose: bool, output_json: bool):
     """Hyperliquid CLI - Trade crypto with ease."""
     ctx.ensure_object(dict)
     ctx.obj["env_file"] = env_file
+    ctx.obj["output_json"] = output_json
 
     log_level = "DEBUG" if verbose else "INFO"
     setup_logging(log_level)
+
+
+def output_result(ctx: click.Context, data: any, table_func=None, **kwargs):
+    """Output result as JSON or formatted table.
+
+    Args:
+        ctx: Click context
+        data: Data to output (will be JSON serialized if --json)
+        table_func: Optional function to render table (called if not --json)
+        **kwargs: Arguments passed to table_func
+    """
+    if ctx.obj.get("output_json"):
+        console.print_json(json.dumps(data, default=str))
+    elif table_func:
+        table_func(**kwargs)
+    else:
+        console.print(data)
 
 
 @cli.command()
@@ -105,6 +124,13 @@ def market_prices(ctx, coins: tuple, network: str):
     client = get_info_client(network)
     try:
         prices = client.get_all_mids()
+
+        if ctx.obj.get("output_json"):
+            if coins:
+                coins = [c.upper() for c in coins]
+                prices = {c: prices.get(c) for c in coins}
+            output_result(ctx, prices)
+            return
 
         if coins:
             coins = [c.upper() for c in coins]
@@ -142,6 +168,10 @@ def market_book(ctx, coin: str, depth: int, network: str):
     try:
         book = client.get_l2_book(coin.upper())
 
+        if ctx.obj.get("output_json"):
+            output_result(ctx, book)
+            return
+
         table = Table(title=f"Order Book - {coin.upper()}")
         table.add_column("Bid Price", justify="right", style="green")
         table.add_column("Bid Size", justify="right")
@@ -173,6 +203,13 @@ def market_context(ctx, coins: tuple, network: str):
     try:
         contexts = client.get_asset_contexts()
         universe = contexts.get("universe", [])
+
+        if ctx.obj.get("output_json"):
+            if coins:
+                coins = [c.upper() for c in coins]
+                universe = [a for a in universe if a.get("name") in coins]
+            output_result(ctx, {"universe": universe})
+            return
 
         if coins:
             coins = [c.upper() for c in coins]
@@ -260,12 +297,19 @@ def market_candles(ctx, coin: str, interval: str, hours: Optional[int], days: Op
         )
 
         if not candles:
-            console.print(f"[yellow]No candle data found for {coin.upper()}[/yellow]")
+            if ctx.obj.get("output_json"):
+                output_result(ctx, {"coin": coin.upper(), "candles": []})
+            else:
+                console.print(f"[yellow]No candle data found for {coin.upper()}[/yellow]")
             return
 
         # Aggregate candles if needed
         if is_aggregated:
             candles = _aggregate_candles(candles, aggregated_intervals[interval])
+
+        if ctx.obj.get("output_json"):
+            output_result(ctx, {"coin": coin.upper(), "interval": interval, "candles": candles[-limit:]})
+            return
 
         tz = get_timezone_str()
         table = Table(title=f"{coin.upper()} Candles ({interval}) [{tz}]")
@@ -336,6 +380,10 @@ def market_funding(ctx, coin: str, network: str, limit: int):
     try:
         funding = client.get_recent_funding(coin.upper())
 
+        if ctx.obj.get("output_json"):
+            output_result(ctx, {"coin": coin.upper(), "funding": funding[:limit]})
+            return
+
         table = Table(title=f"{coin.upper()} Funding History [{get_timezone_str()}]")
         table.add_column("Time", style="cyan")
         table.add_column("Funding Rate", justify="right")
@@ -370,6 +418,10 @@ def account_state(ctx, address: Optional[str]):
     client = get_client(ctx.obj.get("env_file"))
     try:
         state = client.get_user_state(address)
+
+        if ctx.obj.get("output_json"):
+            output_result(ctx, state)
+            return
 
         # Display account summary
         tree = Tree(f"[bold cyan]Account: {state.get('address', 'N/A')[:20]}...[/bold cyan]")
@@ -414,6 +466,10 @@ def account_orders(ctx, address: Optional[str]):
     try:
         orders = client.get_open_orders(address)
 
+        if ctx.obj.get("output_json"):
+            output_result(ctx, {"orders": orders})
+            return
+
         if not orders:
             console.print("[yellow]No open orders[/yellow]")
             return
@@ -449,6 +505,10 @@ def account_fills(ctx, address: Optional[str], limit: int):
     client = get_client(ctx.obj.get("env_file"))
     try:
         fills = client.get_user_fills(address)[:limit]
+
+        if ctx.obj.get("output_json"):
+            output_result(ctx, {"fills": fills})
+            return
 
         if not fills:
             console.print("[yellow]No fills found[/yellow]")
@@ -488,6 +548,10 @@ def account_funding(ctx, address: Optional[str], limit: int):
     try:
         funding = client.get_account_funding_history(address)[:limit]
 
+        if ctx.obj.get("output_json"):
+            output_result(ctx, {"funding": funding})
+            return
+
         if not funding:
             console.print("[yellow]No funding history found[/yellow]")
             return
@@ -515,11 +579,289 @@ def account_funding(ctx, address: Optional[str], limit: int):
 @click.option("--address", "-a", help="Address to query")
 @click.pass_context
 def account_rewards(ctx, address: Optional[str]):
-    """Get rewards information."""
+    """Get staking rewards history."""
+    client = get_client(ctx.obj.get("env_file"), require_auth=False)
+    try:
+        rewards = client.get_staking_rewards(address)
+
+        if ctx.obj.get("output_json"):
+            output_result(ctx, {"rewards": rewards})
+            return
+
+        if not rewards:
+            console.print("[yellow]No staking rewards found[/yellow]")
+            return
+
+        table = Table(title=f"Staking Rewards [{get_timezone_str()}]")
+        table.add_column("Time")
+        table.add_column("Source", style="cyan")
+        table.add_column("Amount", justify="right", style="green")
+
+        for reward in rewards:
+            amount = float(reward.get("totalAmount", 0))
+            table.add_row(
+                format_timestamp(reward.get("time", 0)),
+                reward.get("source", "N/A"),
+                f"{amount:,.4f} HYPE",
+            )
+
+        console.print(table)
+    finally:
+        client.close()
+
+
+# ==================== Staking Commands ====================
+
+@cli.group()
+def staking():
+    """Staking commands for HYPE delegation."""
+    pass
+
+
+@staking.command(name="summary")
+@click.option("--address", "-a", help="Address to query")
+@click.pass_context
+def staking_summary(ctx, address: Optional[str]):
+    """Get staking summary."""
+    client = get_client(ctx.obj.get("env_file"), require_auth=False)
+    try:
+        summary = client.get_staking_summary(address)
+
+        if ctx.obj.get("output_json"):
+            output_result(ctx, summary)
+            return
+
+        delegated = float(summary.get("delegated", 0))
+        undelegated = float(summary.get("undelegated", 0))
+        total_pending = float(summary.get("totalPendingWithdrawal", 0))
+        n_pending = summary.get("nPendingWithdrawals", 0)
+
+        table = Table(title="Staking Summary")
+        table.add_column("Metric", style="cyan")
+        table.add_column("Value", justify="right", style="green")
+        table.add_row("Delegated", f"{delegated:,.4f} HYPE")
+        table.add_row("Undelegated (Pending)", f"{undelegated:,.4f} HYPE")
+        table.add_row("Total Pending Withdrawal", f"{total_pending:,.4f} HYPE")
+        table.add_row("Pending Withdrawals Count", str(n_pending))
+
+        console.print(table)
+    finally:
+        client.close()
+
+
+@staking.command(name="validators")
+@click.option("--limit", "-l", default=30, help="Number of validators to show")
+@click.option("--sort", "sort_by", type=click.Choice(["stake", "commission", "name"]), default="stake", help="Sort by field")
+@click.pass_context
+def staking_validators(ctx, limit: int, sort_by: str):
+    """Get list of all validators."""
+    client = get_client(ctx.obj.get("env_file"), require_auth=False)
+    try:
+        validators = client.get_validators()
+
+        if ctx.obj.get("output_json"):
+            output_result(ctx, {"validators": validators[:limit]})
+            return
+
+        if not validators:
+            console.print("[yellow]No validators found[/yellow]")
+            return
+
+        # Sort validators
+        if sort_by == "stake":
+            validators = sorted(validators, key=lambda x: float(x.get("stake", 0)), reverse=True)
+        elif sort_by == "commission":
+            validators = sorted(validators, key=lambda x: float(x.get("commission", 0)))
+        else:  # name
+            validators = sorted(validators, key=lambda x: x.get("name", "").lower())
+
+        table = Table(title=f"Validators (Top {min(limit, len(validators))})")
+        table.add_column("#", justify="right", style="dim")
+        table.add_column("Name", style="cyan")
+        table.add_column("Address", style="dim")
+        table.add_column("Stake", justify="right", style="green")
+        table.add_column("Commission", justify="right")
+        table.add_column("Delegations", justify="right")
+
+        for i, v in enumerate(validators[:limit]):
+            stake = float(v.get("stake", 0))
+            commission = float(v.get("commission", 0)) * 100
+            n_delegations = v.get("nDelegations", 0)
+            address = v.get("validator", "N/A")
+            address_short = address[:10] + "..." if len(address) > 10 else address
+
+            table.add_row(
+                str(i + 1),
+                v.get("name", "Unknown"),
+                address_short,
+                f"{stake:,.2f} HYPE",
+                f"{commission:.1f}%",
+                str(n_delegations),
+            )
+
+        console.print(table)
+        console.print(f"\n[dim]Total validators: {len(validators)}[/dim]")
+        console.print(f"[dim]Use --sort name|stake|commission to change sort order[/dim]")
+    finally:
+        client.close()
+
+
+@staking.command(name="delegations")
+@click.option("--address", "-a", help="Address to query")
+@click.pass_context
+def staking_delegations(ctx, address: Optional[str]):
+    """Get staking delegations."""
+    client = get_client(ctx.obj.get("env_file"), require_auth=False)
+    try:
+        delegations = client.get_staking_delegations(address)
+
+        if ctx.obj.get("output_json"):
+            output_result(ctx, {"delegations": delegations})
+            return
+
+        if not delegations:
+            console.print("[yellow]No staking delegations found[/yellow]")
+            return
+
+        table = Table(title="Staking Delegations")
+        table.add_column("Validator", style="cyan")
+        table.add_column("Amount", justify="right", style="green")
+        table.add_column("Locked Until")
+
+        for delegation in delegations:
+            amount = float(delegation.get("amount", 0))
+            locked_until = delegation.get("lockedUntilTimestamp", 0)
+            locked_str = format_timestamp(locked_until) if locked_until else "Unlocked"
+            table.add_row(
+                delegation.get("validator", "N/A")[:20] + "...",
+                f"{amount:,.4f} HYPE",
+                locked_str,
+            )
+
+        console.print(table)
+    finally:
+        client.close()
+
+
+@staking.command(name="rewards")
+@click.option("--address", "-a", help="Address to query")
+@click.option("--limit", "-l", default=20, help="Number of records to show")
+@click.pass_context
+def staking_rewards(ctx, address: Optional[str], limit: int):
+    """Get staking rewards history."""
+    client = get_client(ctx.obj.get("env_file"), require_auth=False)
+    try:
+        rewards = client.get_staking_rewards(address)[:limit]
+
+        if ctx.obj.get("output_json"):
+            output_result(ctx, {"rewards": rewards})
+            return
+
+        if not rewards:
+            console.print("[yellow]No staking rewards found[/yellow]")
+            return
+
+        table = Table(title=f"Staking Rewards [{get_timezone_str()}]")
+        table.add_column("Time")
+        table.add_column("Source", style="cyan")
+        table.add_column("Amount", justify="right", style="green")
+
+        for reward in rewards:
+            amount = float(reward.get("totalAmount", 0))
+            table.add_row(
+                format_timestamp(reward.get("time", 0)),
+                reward.get("source", "N/A"),
+                f"{amount:,.6f} HYPE",
+            )
+
+        console.print(table)
+    finally:
+        client.close()
+
+
+@staking.command(name="history")
+@click.option("--address", "-a", help="Address to query")
+@click.option("--limit", "-l", default=20, help="Number of records to show")
+@click.pass_context
+def staking_history(ctx, address: Optional[str], limit: int):
+    """Get staking history (delegations/undelegations)."""
+    client = get_client(ctx.obj.get("env_file"), require_auth=False)
+    try:
+        history = client.get_staking_history(address)[:limit]
+
+        if ctx.obj.get("output_json"):
+            output_result(ctx, {"history": history})
+            return
+
+        if not history:
+            console.print("[yellow]No staking history found[/yellow]")
+            return
+
+        table = Table(title=f"Staking History [{get_timezone_str()}]")
+        table.add_column("Time")
+        table.add_column("Type", style="cyan")
+        table.add_column("Validator")
+        table.add_column("Amount", justify="right", style="green")
+        table.add_column("Hash", style="dim")
+
+        for event in history:
+            event_type = event.get("type", "N/A")
+            is_delegate = "delegate" in event_type.lower() and "undelegate" not in event_type.lower()
+            type_str = "[green]Delegate[/green]" if is_delegate else "[red]Undelegate[/red]"
+
+            amount = float(event.get("amount", 0))
+            hash_val = event.get("hash", "N/A")
+            hash_str = hash_val[:16] + "..." if hash_val and len(hash_val) > 16 else hash_val
+
+            table.add_row(
+                format_timestamp(event.get("time", 0)),
+                type_str,
+                event.get("validator", "N/A")[:16] + "...",
+                f"{amount:,.4f} HYPE",
+                hash_str,
+            )
+
+        console.print(table)
+    finally:
+        client.close()
+
+
+@staking.command(name="delegate")
+@click.argument("validator")
+@click.argument("amount", type=float)
+@click.confirmation_option("-y", "--yes", prompt="Confirm delegation?")
+@click.pass_context
+def staking_delegate(ctx, validator: str, amount: float):
+    """Delegate HYPE tokens to a validator.
+
+    VALIDATOR: Validator address (0x...)
+    AMOUNT: Amount of HYPE to delegate
+    """
     client = get_client(ctx.obj.get("env_file"))
     try:
-        rewards = client.get_rewards(address)
-        console.print_json(json.dumps(rewards))
+        result = client.delegate(validator, amount)
+        console.print(f"[green]Successfully delegated {amount} HYPE to {validator[:16]}...[/green]")
+        console.print_json(json.dumps(result))
+    finally:
+        client.close()
+
+
+@staking.command(name="undelegate")
+@click.argument("validator")
+@click.argument("amount", type=float)
+@click.confirmation_option("-y", "--yes", prompt="Confirm undelegation?")
+@click.pass_context
+def staking_undelegate(ctx, validator: str, amount: float):
+    """Undelegate HYPE tokens from a validator.
+
+    VALIDATOR: Validator address (0x...)
+    AMOUNT: Amount of HYPE to undelegate
+    """
+    client = get_client(ctx.obj.get("env_file"))
+    try:
+        result = client.undelegate(validator, amount)
+        console.print(f"[green]Successfully undelegated {amount} HYPE from {validator[:16]}...[/green]")
+        console.print_json(json.dumps(result))
     finally:
         client.close()
 
