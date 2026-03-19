@@ -10,20 +10,65 @@ tags: [trading, dex, cli, api, derivatives, staking]
 
 基于 Python SDK 的 Hyperliquid DEX 命令行交易工具，提供完整的市场数据查询、账户管理和交易功能。
 
-## 环境准备
+## 安装方式
+
+### 方式一：在线安装（推荐）
 
 ```bash
+# 从 PyPI 安装
+pip install hyperliquid-trading
+
+```
+
+### 方式二：源码安装
+
+```bash
+# 克隆项目
+git clone <repo-url>
+cd hyperliquid-trading
+
 # 安装依赖
 uv sync
 
 # 安装 hyperliquid-trading
-uv pip install -e .
 
+pip install -e .
+```
+
+## 环境要求
+
+- Python >= 3.10
+- pip 或 uv 包管理器
+
+### 检查环境
+
+```bash
+# 检查 Python 版本
+python --version  # 需要 >= 3.10
+
+# 检查 pip
+pip --version
+
+# 或检查 uv（推荐）
+uv --version
+```
+
+## 环境配置
+
+```bash
 # 初始化配置（交互式）
-uv run hl init
+hl init
 
 # 或手动创建 .env
 cp .env.example .env
+```
+
+## 验证安装
+
+```bash
+# 检查是否安装成功
+hl version
+
 ```
 
 ## 配置说明
@@ -58,13 +103,13 @@ HL_LOG_LEVEL=INFO               # 日志级别
 
 ```bash
 # 使用测试网账号
-uv run hl -e .env.test account state
+hl -e .env.test account state
 
 # 使用主网账号交易
-uv run hl -e .env.prod trade buy BTC 0.01 -p 65000
+hl -e .env.prod trade buy BTC 0.01 -p 65000
 
 # 使用指定钱包
-uv run hl -e .env.wallet1 account orders
+hl -e .env.wallet1 account orders
 ```
 
 ## 命令速查
@@ -73,88 +118,88 @@ uv run hl -e .env.wallet1 account orders
 
 ```bash
 # 获取价格
-uv run hl market prices [COIN1] [COIN2]... [-n mainnet|testnet]
+hl market prices [COIN1] [COIN2]... [-n mainnet|testnet]
 
 # 查看订单簿
-uv run hl market book <COIN> [-d 10] [-n testnet]
+hl market book <COIN> [-d 10] [-n testnet]
 
 # 获取资产参数（含最大杠杆倍率，设置杠杆前可先查询）
-uv run hl market context [COIN...] [-n testnet]
+hl market context [COIN...] [-n testnet]
 
 # 获取资金费率
-uv run hl market funding <COIN> [-n testnet] [-l 10]
+hl market funding <COIN> [-n testnet] [-l 10]
 
 # 获取 K 线数据
-uv run hl market candles <COIN> [-i 1h] [-H 24 | -d 30] [-n mainnet]
+hl market candles <COIN> [-i 1h] [-H 24 | -d 30] [-n mainnet]
 ```
 
 ### 账户信息 (account)
 
 ```bash
 # 账户状态（余额、持仓）
-uv run hl account state [-a <ADDRESS>]
+hl account state [-a <ADDRESS>]
 
 # 未成交订单
-uv run hl account orders [-a <ADDRESS>]
+hl account orders [-a <ADDRESS>]
 
 # 成交历史
-uv run hl account fills [-a <ADDRESS>] [-l 20]
+hl account fills [-a <ADDRESS>] [-l 20]
 
 # 资金费用历史
-uv run hl account funding [-a <ADDRESS>] [-l 20]
+hl account funding [-a <ADDRESS>] [-l 20]
 
 # 质押奖励历史
-uv run hl account rewards [-a <ADDRESS>]
+hl account rewards [-a <ADDRESS>]
 ```
 
 ### 交易操作 (trade)
 
-> **注意**：交易会使用该币种上次设置的杠杆倍率。如不确定当前杠杆，建议先执行 `uv run hl leverage set <COIN> <VALUE>` 确认设置。
+> **注意**：交易会使用该币种上次设置的杠杆倍率。如不确定当前杠杆，建议先执行 `hl leverage set <COIN> <VALUE>` 确认设置。
 
 ```bash
 # 买入限价单
-uv run hl trade buy <COIN> <SIZE> -p <PRICE> [--cloid <ID>]
+hl trade buy <COIN> <SIZE> -p <PRICE> [--cloid <ID>]
 
 # 买入市价单（跳过确认）
-uv run hl trade buy <COIN> <SIZE> -y
+hl trade buy <COIN> <SIZE> -y
 
 # 卖出限价单
-uv run hl trade sell <COIN> <SIZE> -p <PRICE> [--reduce-only]
+hl trade sell <COIN> <SIZE> -p <PRICE> [--reduce-only]
 
 # 卖出市价单
-uv run hl trade sell <COIN> <SIZE> [--reduce-only]
+hl trade sell <COIN> <SIZE> [--reduce-only]
 
 # 取消订单
-uv run hl trade cancel <COIN> <ORDER_ID>
+hl trade cancel <COIN> <ORDER_ID>
 
 # 取消所有订单（跳过确认）
-uv run hl trade cancel-all [-c <COIN>] -y
+hl trade cancel-all [-c <COIN>] -y
 
 # 修改订单
-uv run hl trade modify <COIN> <ORDER_ID> <NEW_SIZE> <NEW_PRICE>
+hl trade modify <COIN> <ORDER_ID> <NEW_SIZE> <NEW_PRICE>
 
 # 平仓
-uv run hl trade close <COIN>
+hl trade close <COIN>
 ```
 
 ### 杠杆管理 (leverage)
 
 ```bash
 # 设置杠杆
-uv run hl leverage set <COIN> <VALUE> [--cross]
+hl leverage set <COIN> <VALUE> [--cross]
 
 # 调整逐仓保证金
-uv run hl leverage margin <COIN> <AMOUNT>
+hl leverage margin <COIN> <AMOUNT>
 ```
 
 ### 转账提现 (transfer)
 
 ```bash
 # 内部转账
-uv run hl transfer send <DESTINATION> <AMOUNT> [--token USDC]
+hl transfer send <DESTINATION> <AMOUNT> [--token USDC]
 
 # 跨链提现（跳过确认）
-uv run hl transfer withdraw <DESTINATION> <AMOUNT> -y
+hl transfer withdraw <DESTINATION> <AMOUNT> -y
 ```
 
 ### 质押功能 (staking)
@@ -163,25 +208,25 @@ HYPE 代币质押相关命令，支持查询验证者、委托质押、解除质
 
 ```bash
 # 查看质押摘要（已质押、待解除数量）
-uv run hl staking summary [-a <ADDRESS>]
+hl staking summary [-a <ADDRESS>]
 
 # 查看验证者列表
-uv run hl staking validators [-l 30] [--sort stake|commission|name]
+hl staking validators [-l 30] [--sort stake|commission|name]
 
 # 查看质押委托
-uv run hl staking delegations [-a <ADDRESS>]
+hl staking delegations [-a <ADDRESS>]
 
 # 查看质押奖励历史
-uv run hl staking rewards [-a <ADDRESS>] [-l 20]
+hl staking rewards [-a <ADDRESS>] [-l 20]
 
 # 查看质押历史（委托/解除委托记录）
-uv run hl staking history [-a <ADDRESS>] [-l 20]
+hl staking history [-a <ADDRESS>] [-l 20]
 
 # 质押 HYPE 到验证者（需要私钥）
-uv run hl staking delegate <VALIDATOR_ADDRESS> <AMOUNT> -y
+hl staking delegate <VALIDATOR_ADDRESS> <AMOUNT> -y
 
 # 解除质押（需要私钥）
-uv run hl staking undelegate <VALIDATOR_ADDRESS> <AMOUNT> -y
+hl staking undelegate <VALIDATOR_ADDRESS> <AMOUNT> -y
 ```
 
 ## 使用示例
@@ -190,43 +235,43 @@ uv run hl staking undelegate <VALIDATOR_ADDRESS> <AMOUNT> -y
 
 ```bash
 # 查询 BTC/ETH 价格
-uv run hl market prices BTC ETH -n mainnet
+hl market prices BTC ETH -n mainnet
 
 # 查询 所有价格（数据量过大，不建议使用）
-uv run hl market prices  -n mainnet
+hl market prices  -n mainnet
 
 # 查看 BTC 订单簿前 5 档
-uv run hl market book BTC -d 5 -n mainnet
+hl market book BTC -d 5 -n mainnet
 
 # 查看 ETH 资金费率
-uv run hl market funding ETH -n mainnet -l 5
+hl market funding ETH -n mainnet -l 5
 
 # 查看 BTC 最近 24 小时 1 小时 K 线
-uv run hl market candles BTC -i 1h -H 24 -n mainnet
+hl market candles BTC -i 1h -H 24 -n mainnet
 
 # 查看 ETH 最近 30 天日 K 线
-uv run hl market candles ETH -i 1d -d 30 -n mainnet
+hl market candles ETH -i 1d -d 30 -n mainnet
 
 # 查看 BTC 最近 1 年周 K 线
-uv run hl market candles BTC -i 1w -d 365 -n mainnet
+hl market candles BTC -i 1w -d 365 -n mainnet
 
 # 查看 BTC 最近 1 年月 K 线
-uv run hl market candles BTC -i 1M -d 365 -n mainnet
+hl market candles BTC -i 1M -d 365 -n mainnet
 
 # 查看 BTC 最近 1 年季度 K 线
-uv run hl market candles BTC -i 3M -d 365 -n mainnet
+hl market candles BTC -i 3M -d 365 -n mainnet
 
 # 查看 BTC 最近 1 年半年 K 线
-uv run hl market candles BTC -i 6M -d 365 -n mainnet
+hl market candles BTC -i 6M -d 365 -n mainnet
 
 # 查询 所有参数（数据量过大，不建议使用）
-uv run hl market prices  -n mainnet
+hl market prices  -n mainnet
 
 # 查询 BTC ETH 资产交易参数
-uv run hl market context BTC ETH -n mainnet
+hl market context BTC ETH -n mainnet
 
 # 查询 所有可交易的资产交易参数（数据量过大，不建议使用）
-uv run hl market context -n mainnet
+hl market context -n mainnet
 
 
 ```
@@ -235,54 +280,54 @@ uv run hl market context -n mainnet
 
 ```bash
 # 测试网买入 0.1 BTC 限价单 @ 65000
-uv run hl trade buy BTC 0.1 -p 65000
+hl trade buy BTC 0.1 -p 65000
 
 # 测试网市价卖出 0.05 ETH
-uv run hl trade sell ETH 0.05
+hl trade sell ETH 0.05
 
 # 设置 BTC 杠杆为 10x 全仓
-uv run hl leverage set BTC 10 --cross
+hl leverage set BTC 10 --cross
 
 # 平掉 BTC 仓位
-uv run hl trade close BTC
+hl trade close BTC
 ```
 
 ### 账户查询
 
 ```bash
 # 查看账户概览
-uv run hl account state
+hl account state
 
 # 查看最近 10 笔成交
-uv run hl account fills -l 10
+hl account fills -l 10
 
 # 查看资金费用
-uv run hl account funding -l 20
+hl account funding -l 20
 ```
 
 ### 质押操作
 
 ```bash
 # 查看质押摘要
-uv run hl staking summary
+hl staking summary
 
 # 查看验证者列表（按质押量排序，显示前 10 个）
-uv run hl staking validators -l 10 --sort stake
+hl staking validators -l 10 --sort stake
 
 # 查看验证者列表（按佣金率排序）
-uv run hl staking validators --sort commission
+hl staking validators --sort commission
 
 # 查看当前委托
-uv run hl staking delegations
+hl staking delegations
 
 # 查看质押奖励
-uv run hl staking rewards -l 10
+hl staking rewards -l 10
 
 # 质押 10 HYPE 到指定验证者
-uv run hl staking delegate 0x1234... 10 -y
+hl staking delegate 0x1234... 10 -y
 
 # 解除 5 HYPE 质押
-uv run hl staking undelegate 0x1234... 5 -y
+hl staking undelegate 0x1234... 5 -y
 ```
 
 ## 安全提示
@@ -308,21 +353,21 @@ uv run hl staking undelegate 0x1234... 5 -y
 
 ```bash
 # 指定环境文件
-uv run hl -e /path/to/.env <command>
+hl -e /path/to/.env <command>
 
 # 启用详细日志
-uv run hl -v <command>
+hl -v <command>
 
 # 输出原始 JSON 格式（适用于 market/account 命令）
-uv run hl --json market prices BTC ETH
-uv run hl -j account state
+hl --json market prices BTC ETH
+hl -j account state
 
 # 跳过确认（适用于 trade/leverage/transfer 命令）
-uv run hl <command> -y
-uv run hl <command> --yes
+hl <command> -y
+hl <command> --yes
 
 # 查看版本
-uv run hl version
+hl version
 ```
 
 > **JSON 输出结构文档**: [references/output_json_schema.md](references/output_json_schema.md)
