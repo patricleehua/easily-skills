@@ -18,6 +18,8 @@ tags: [trading, dex, cli, api, derivatives, staking]
 # 从 PyPI 安装
 pip install hyperliquid-trading
 
+# 或使用 uv
+uv pip install hyperliquid-trading
 ```
 
 ### 方式二：源码安装
@@ -31,8 +33,10 @@ cd hyperliquid-trading
 uv sync
 
 # 安装 hyperliquid-trading
-
 pip install -e .
+# 或使用 uv
+
+uv pip install -e .
 ```
 
 ## 环境要求
