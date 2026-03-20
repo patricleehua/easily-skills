@@ -17,6 +17,7 @@ class HyperliquidConfig:
     secret_key: Optional[str] = None
     api_secret_key: Optional[str] = None
     log_level: str = "INFO"
+    language: str = "en"
 
     @property
     def is_mainnet(self) -> bool:
@@ -73,6 +74,7 @@ def load_config(env_file: Optional[str] = None) -> HyperliquidConfig:
         secret_key=os.getenv("HL_SECRET_KEY"),
         api_secret_key=os.getenv("HL_API_SECRET_KEY"),
         log_level=os.getenv("HL_LOG_LEVEL", "INFO"),
+        language=os.getenv("HL_LANGUAGE", "en"),
     )
 
 
@@ -86,6 +88,7 @@ def setup_config_interactive() -> HyperliquidConfig:
     secret_key = input("Your private key (0x...): ").strip()
     api_secret_key = input("API wallet private key (optional): ").strip() or None
     log_level = input("Log level (DEBUG/INFO/WARNING/ERROR) [INFO]: ").strip() or "INFO"
+    language = input("Language (en/zh-CN) [en]: ").strip() or "en"
 
     config = HyperliquidConfig(
         network=network,
@@ -93,6 +96,7 @@ def setup_config_interactive() -> HyperliquidConfig:
         secret_key=secret_key,
         api_secret_key=api_secret_key,
         log_level=log_level,
+        language=language,
     )
 
     # Save to .env file
@@ -104,6 +108,7 @@ HL_SECRET_KEY={secret_key}
     if api_secret_key:
         env_content += f"HL_API_SECRET_KEY={api_secret_key}\n"
     env_content += f"HL_LOG_LEVEL={log_level}\n"
+    env_content += f"HL_LANGUAGE={language}\n"
 
     env_path = Path(".env")
     with open(env_path, "w") as f:

@@ -253,47 +253,97 @@ uv run hl --json market funding BTC -n mainnet -l 10
 **输出结构**:
 ```json
 {
+  "marginSummary": {
+    "accountValue": "367.24",
+    "totalNtlPos": "104.89",
+    "totalRawUsd": "262.35",
+    "totalMarginUsed": "28.85"
+  },
+  "crossMarginSummary": {
+    "accountValue": "338.38",
+    "totalNtlPos": "0.0",
+    "totalRawUsd": "338.38",
+    "totalMarginUsed": "0.0"
+  },
+  "crossMaintenanceMarginUsed": "0.0",
+  "withdrawable": "338.38",
   "assetPositions": [
     {
+      "type": "oneWay",
       "position": {
         "coin": "BTC",
-        "entryPx": "65000.0",
-        "szi": "0.1",
-        "unrealizedPnl": "100.5",
+        "szi": "0.0003",
         "leverage": {
-          "type": "cross",
-          "value": 10
+          "type": "isolated",
+          "value": 10,
+          "rawUsd": "-19.31"
+        },
+        "entryPx": "71128.0",
+        "positionValue": "21.54",
+        "unrealizedPnl": "0.20",
+        "returnOnEquity": "0.096",
+        "liquidationPx": "65181.96",
+        "marginUsed": "2.23",
+        "maxLeverage": 40,
+        "cumFunding": {
+          "allTime": "0.096",
+          "sinceOpen": "0.096",
+          "sinceChange": "0.096"
         }
       }
     }
   ],
-  "crossMarginSummary": {
-    "accountValue": "10000.0",
-    "totalMarginUsed": "500.0",
-    "withdrawable": "9500.0"
-  },
-  "marginSummary": {
-    "accountValue": "10000.0",
-    "totalMarginUsed": "500.0",
-    "totalNtlPos": "6500.0",
-    "totalRawUsd": "10000.0"
-  },
-  "withdrawable": "9500.0"
+  "time": 1773973299258
 }
 ```
 
+#### 账户级别字段
+
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `assetPositions` | array | 持仓列表 |
+| `marginSummary` | object | 保证金汇总（含 cross + isolated） |
+| `marginSummary.accountValue` | string | 账户总价值 |
+| `marginSummary.totalNtlPos` | string | 持仓总价值（名义价值） |
+| `marginSummary.totalRawUsd` | string | 可用保证金 |
+| `marginSummary.totalMarginUsed` | string | 已用保证金 |
+| `crossMarginSummary` | object | Cross 保证金汇总 |
+| `crossMaintenanceMarginUsed` | string | Cross 维持保证金 |
+| `withdrawable` | string | 可提取金额 |
+| `time` | number | 时间戳 (毫秒) |
+
+#### 持仓级别字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `type` | string | 持仓类型 (`oneWay`) |
 | `position.coin` | string | 币种名称 |
-| `position.entryPx` | string | 入场价格 |
 | `position.szi` | string | 持仓数量 (正数多头, 负数空头) |
+| `position.entryPx` | string | 开仓价格 |
+| `position.positionValue` | string | 当前持仓价值 |
 | `position.unrealizedPnl` | string | 未实现盈亏 |
-| `position.leverage.type` | string | 杠杆类型 (`cross`/`isolated`) |
+| `position.returnOnEquity` | string | 收益率 (ROE, 小数形式) |
+| `position.liquidationPx` | string | 强平价格 |
+| `position.marginUsed` | string | 占用保证金 |
+| `position.maxLeverage` | number | 最大可用杠杆 |
+| `position.leverage.type` | string | 杠杆类型 (`isolated`/`cross`) |
 | `position.leverage.value` | number | 杠杆倍数 |
-| `crossMarginSummary.accountValue` | string | 账户价值 |
-| `crossMarginSummary.totalMarginUsed` | string | 已用保证金 |
-| `crossMarginSummary.withdrawable` | string | 可提取金额 |
+| `position.leverage.rawUsd` | string | 原始 USD |
+| `position.cumFunding.allTime` | string | 历史累计资金费 |
+| `position.cumFunding.sinceOpen` | string | 开仓以来资金费 |
+| `position.cumFunding.sinceChange` | string | 最后调整以来资金费 |
+
+#### CLI 显示字段对照
+
+| CLI 显示 | JSON 字段 |
+|----------|-----------|
+| Total Account Value | `marginSummary.accountValue` |
+| Total Position Value | `marginSummary.totalNtlPos` |
+| Available Margin | `marginSummary.totalRawUsd` |
+| Margin Used | `marginSummary.totalMarginUsed` |
+| Withdrawable | `withdrawable` |
+| Margin Utilization | `marginSummary.totalMarginUsed / marginSummary.accountValue * 100` |
+| Position Ratio | `marginSummary.totalNtlPos / marginSummary.accountValue * 100` |
+| Leverage | `marginSummary.totalNtlPos / marginSummary.totalMarginUsed` |
 
 **示例**:
 ```bash

@@ -1,0 +1,127 @@
+{
+  "common": {
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "success": "成功",
+    "error": "错误",
+    "warning": "警告",
+    "info": "信息",
+    "yes": "是",
+    "no": "否",
+    "cancel": "取消",
+    "confirm": "确认",
+    "loading": "加载中...",
+    "no_data": "暂无数据",
+    "updated": "已更新"
+  },
+  "account": {
+    "title": "账户概览",
+    "position_details": "持仓详情",
+    "total_value": "账户总价值",
+    "position_value": "持仓总价值",
+    "available_margin": "可用保证金",
+    "margin_used": "已用保证金",
+    "withdrawable": "可提取金额",
+    "total_unrealized_pnl": "总未实现盈亏"
+  },
+  "risk": {
+    "title": "风险指标",
+    "margin_utilization": "保证金使用率",
+    "position_ratio": "持仓占比",
+    "leverage": "杠杆倍数"
+  },
+  "position": {
+    "asset": "资产",
+    "amount": "数量",
+    "leverage": "杠杆",
+    "entry_price": "开仓价",
+    "current_value": "当前价值",
+    "unrealized_pnl": "未实现盈亏",
+    "roe": "收益率",
+    "liquidation_price": "强平价",
+    "margin_ratio": "保证金占比"
+  },
+  "order": {
+    "title": "挂单列表",
+    "no_orders": "暂无挂单",
+    "coin": "币种",
+    "side": "方向",
+    "size": "数量",
+    "price": "价格",
+    "order_id": "订单ID",
+    "buy": "买入",
+    "sell": "卖出",
+    "cancel_success": "订单 {oid} 已取消",
+    "cancel_failed": "取消订单 {oid} 失败"
+  },
+  "fill": {
+    "title": "成交记录",
+    "no_fills": "暂无成交记录",
+    "coin": "币种",
+    "side": "方向",
+    "size": "数量",
+    "price": "价格",
+    "time": "时间",
+    "pnl": "盈亏"
+  },
+  "trade": {
+    "title": "交易",
+    "market": "市价",
+    "limit": "限价",
+    "buy": "买入",
+    "sell": "卖出",
+    "size": "数量",
+    "price": "价格",
+    "leverage": "杠杆",
+    "order_placed": "下单成功",
+    "order_failed": "下单失败",
+    "reduce_only": "只减仓",
+    "slippage": "滑点"
+  },
+  "market": {
+    "price": "价格",
+    "prices": "市场价格",
+    "book": "订单簿",
+    "bids": "买单",
+    "asks": "卖单",
+    "funding_rate": "资金费率",
+    "funding_history": "资金费率历史",
+    "candles": "K线数据",
+    "context": "资产参数"
+  },
+  "staking": {
+    "title": "质押",
+    "validators": "验证者",
+    "delegations": "委托",
+    "rewards": "奖励",
+    "summary": "质押摘要",
+    "delegate": "委托",
+    "undelegate": "解除委托",
+    "stake": "质押量",
+    "commission": "佣金",
+    "delegators": "委托人数"
+  },
+  "transfer": {
+    "title": "转账",
+    "deposit": "充值",
+    "withdraw": "提现",
+    "amount": "数量",
+    "destination": "目标地址",
+    "fee": "手续费"
+  },
+  "config": {
+    "title": "配置",
+    "network": "网络",
+    "address": "地址",
+    "language": "语言",
+    "log_level": "日志级别",
+    "setup_prompt": "运行 'hl init' 进行配置",
+    "errors": {
+      "address_required": "需要设置 HL_ACCOUNT_ADDRESS",
+      "secret_key_required": "交易操作需要设置 HL_SECRET_KEY"
+    }
+  },
+  "time": {
+    "last_updated": "更新时间"
+  }
+}

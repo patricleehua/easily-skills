@@ -15,6 +15,7 @@ from rich.tree import Tree
 
 from .config import load_config, setup_config_interactive
 from .hyperliquid_client import HyperliquidClient
+from .i18n import t, detect_language
 
 console = Console()
 
@@ -73,12 +74,14 @@ def get_info_client(network: str = "testnet") -> HyperliquidClient:
 @click.option("--env-file", "-e", help="Path to .env file")
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
 @click.option("--json", "output_json", "-j", is_flag=True, help="Output raw JSON")
+@click.option("--lang", "-l", help="Language (en/zh-CN)")
 @click.pass_context
-def cli(ctx: click.Context, env_file: Optional[str], verbose: bool, output_json: bool):
+def cli(ctx: click.Context, env_file: Optional[str], verbose: bool, output_json: bool, lang: Optional[str]):
     """Hyperliquid CLI - Trade crypto with ease."""
     ctx.ensure_object(dict)
     ctx.obj["env_file"] = env_file
     ctx.obj["output_json"] = output_json
+    ctx.obj["lang"] = lang or detect_language()
 
     log_level = "DEBUG" if verbose else "INFO"
     setup_logging(log_level)
@@ -409,12 +412,16 @@ def account():
     """Account information commands."""
     pass
 
-
 @account.command(name="state")
 @click.option("--address", "-a", help="Address to query (defaults to configured)")
 @click.pass_context
 def account_state(ctx, address: Optional[str]):
     """Get account state (balance, positions)."""
+    from datetime import datetime
+    from rich.panel import Panel
+    from rich.columns import Columns
+
+    lang = ctx.obj.get("lang", "en")
     client = get_client(ctx.obj.get("env_file"))
     try:
         state = client.get_user_state(address)
@@ -423,36 +430,100 @@ def account_state(ctx, address: Optional[str]):
             output_result(ctx, state)
             return
 
-        # Display account summary
-        tree = Tree(f"[bold cyan]Account: {state.get('address', 'N/A')[:20]}...[/bold cyan]")
+        margin = state.get("marginSummary", {})
+        account_value = float(margin.get("accountValue", 0))
+        total_ntl_pos = float(margin.get("totalNtlPos", 0))
+        total_raw_usd = float(margin.get("totalRawUsd", 0))
+        total_margin_used = float(margin.get("totalMarginUsed", 0))
+        withdrawable = float(state.get("withdrawable", 0))
 
-        # Cross margin summary
-        cross = state.get("crossMarginSummary", {})
-        tree.add(f"[bold]Account Value:[/bold] ${float(cross.get('accountValue', 0)):,.2f}")
-        tree.add(f"[bold]Total Margin Used:[/bold] ${float(cross.get('totalMarginUsed', 0)):,.2f}")
-        tree.add(f"[bold]Withdrawable:[/bold] ${float(cross.get('withdrawable', 0)):,.2f}")
+        # Risk metrics
+        margin_utilization = (total_margin_used / account_value * 100) if account_value > 0 else 0
+        position_ratio = (total_ntl_pos / account_value * 100) if account_value > 0 else 0
 
-        # Positions
+        # Account Overview Panel
+        overview_text = (
+            f"[bold]{t('account.total_value', lang)}:[/bold] ${account_value:,.2f}\n"
+            f"[bold]{t('account.position_value', lang)}:[/bold] ${total_ntl_pos:,.2f}\n"
+            f"[bold]{t('account.available_margin', lang)}:[/bold] ${total_raw_usd:,.2f}\n"
+            f"[bold]{t('account.margin_used', lang)}:[/bold] ${total_margin_used:,.2f}\n"
+            f"[bold]{t('account.withdrawable', lang)}:[/bold] ${withdrawable:,.2f}"
+        )
+        overview_panel = Panel(overview_text, title=f"[bold cyan]{t('account.title', lang)}[/bold cyan]", border_style="cyan")
+        console.print(Columns([overview_panel]))
+
+        # Risk Metrics Panel
+        risk_color = "green" if margin_utilization < 50 else "yellow" if margin_utilization < 80 else "red"
+        leverage_str = f"{total_ntl_pos / total_margin_used:.1f}x" if total_margin_used > 0 else "N/A"
+        risk_text = (
+            f"[bold]{t('risk.margin_utilization', lang)}:[/bold] [{risk_color}]{margin_utilization:.2f}%[/{risk_color}]\n"
+            f"[bold]{t('risk.position_ratio', lang)}:[/bold] {position_ratio:.2f}%\n"
+            f"[bold]{t('risk.leverage', lang)}:[/bold] {leverage_str}"
+        )
+        risk_panel = Panel(risk_text, title=f"[bold yellow]{t('risk.title', lang)}[/bold yellow]", border_style="yellow")
+
+        console.print(Columns([risk_panel]))
+
+        # Positions Table
         positions = state.get("assetPositions", [])
         if positions:
-            pos_tree = tree.add("[bold]Positions:[/bold]")
+            table = Table(title=f"[bold]{t('account.position_details', lang)}[/bold]", show_lines=True)
+            table.add_column(t("position.asset", lang), style="cyan bold", width=4)
+            table.add_column(t("position.amount", lang), justify="right", width=12)
+            table.add_column(t("position.leverage", lang), justify="center", width=8)
+            table.add_column(t("position.entry_price", lang), justify="right", width=12)
+            table.add_column(t("position.current_value", lang), justify="right", width=12)
+            table.add_column(t("position.unrealized_pnl", lang), justify="right", width=12)
+            table.add_column(t("position.roe", lang), justify="right", width=8)
+            table.add_column(t("position.liquidation_price", lang), justify="right", width=16)
+            table.add_column(t("position.margin_ratio", lang), justify="right", width=12)
+
+            total_pnl = 0
             for pos in positions:
                 p = pos.get("position", {})
-                coin = p.get("coin", "N/A")
                 szi = float(p.get("szi", 0))
                 if szi == 0:
                     continue
+
+                coin = p.get("coin", "N/A")
                 entry_px = float(p.get("entryPx", 0))
+                pos_val = float(p.get("positionValue", 0))
+                pnl = float(p.get("unrealizedPnl", 0))
+                total_pnl += pnl
+                roe = float(p.get("returnOnEquity", 0)) * 100
+                liq_px = float(p.get("liquidationPx", 0))
+                margin_used = float(p.get("marginUsed", 0))
                 lev = p.get("leverage", {})
-                lev_type = lev.get("type", "cross")
                 lev_val = lev.get("value", "N/A")
-                lev_str = f"{lev_val}x {lev_type}"
-                pos_tree.add(
-                    f"{coin}: {szi:+.4f} @ ${entry_px:,.2f} "
-                    f"({lev_str}) (PNL: ${float(p.get('unrealizedPnl', 0)):,.2f})"
+                lev_type = lev.get("type", "cross")[0].upper()  # I or C
+
+                margin_ratio = (margin_used / account_value * 100) if account_value > 0 else 0
+                pnl_color = "green" if pnl >= 0 else "red"
+                roe_color = "green" if roe >= 0 else "red"
+
+                table.add_row(
+                    coin,
+                    f"{szi:+.4f}",
+                    f"{lev_val}x {lev_type}",
+                    f"${entry_px:,.2f}",
+                    f"${pos_val:,.2f}",
+                    f"[{pnl_color}]${pnl:+,.2f}[/{pnl_color}]",
+                    f"[{roe_color}]{roe:+.2f}%[/{roe_color}]",
+                    f"${liq_px:,.2f}",
+                    f"{margin_ratio:.1f}%"
                 )
 
-        console.print(tree)
+            console.print(table)
+
+            # Total PNL summary
+            total_pnl_color = "green" if total_pnl >= 0 else "red"
+            console.print(f"\n[bold]{t('account.total_unrealized_pnl', lang)}:[/bold] [{total_pnl_color}]${total_pnl:+,.2f}[/{total_pnl_color}]")
+
+        # Timestamp
+        ts = state.get("time")
+        if ts:
+            dt = datetime.fromtimestamp(ts / 1000)
+            console.print(f"\n[dim]{t('time.last_updated', lang)}: {dt.strftime('%Y-%m-%d %H:%M:%S')} ({get_timezone_str()})[/dim]")
     finally:
         client.close()
 

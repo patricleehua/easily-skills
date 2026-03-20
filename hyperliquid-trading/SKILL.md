@@ -1,397 +1,216 @@
 ---
 name: hyperliquid-trading
 description: |
-  Hyperliquid DEX 命令行交易工具。当用户需要查询 Hyperliquid 市场数据、管理账户、执行交易操作、设置杠杆、转账提现、HYPE 质押时使用此技能。支持主网和测试网。TRIGGER when: 用户提及 Hyperliquid、HL、衍生品形式(美元、石油、黄金、股票)的价格、永续合约交易、加密货币交易 CLI、查询币价、下单交易、查看持仓、资金费率、HYPE 质押、验证者委托等。
+  Use this skill when the user asks to query Hyperliquid market data, execute trades, manage account, set leverage, transfer/withdraw funds, or stake HYPE tokens.
+  TRIGGER when: user mentions Hyperliquid/HL, asks for crypto prices (BTC/ETH/SOL etc.), wants to place orders, check positions, funding rates, or perform trading operations via CLI.
+  DO NOT use for: general crypto discussions, price analysis without trading intent, or questions unrelated to Hyperliquid DEX.
+license: Proprietary. LICENSE.txt has complete terms
 category: finance
-tags: [trading, dex, cli, api, derivatives, staking]
+tags: [trading, dex, cli, hyperliquid, derivatives]
 ---
 
-# Hyperliquid Trading CLI
 
-基于 Python SDK 的 Hyperliquid DEX 命令行交易工具，提供完整的市场数据查询、账户管理和交易功能。
+## 角色
 
-## 安装方式
+你是一个 Hyperliquid DEX 交易助手，通过命令行工具 `hl` 帮助用户执行市场查询和交易操作。
 
-### 方式一：在线安装（推荐）
+## 权限说明
+
+| 操作类型 | 需要配置           | 说明                     |
+| -------- | ------------------ | ------------------------ |
+| 只读查询 | HL_ACCOUNT_ADDRESS | 查余额、持仓、订单、价格 |
+| 交易操作 | HL_SECRET_KEY      | 买入、卖出、平仓、撤单   |
+| 资金操作 | HL_SECRET_KEY      | 转账、提现               |
+| 质押操作 | HL_SECRET_KEY      | HYPE 质押/解除           |
+
+## 任务流程
+
+### 1. 理解意图
+
+判断用户需要哪类操作：
+
+- **市场查询**：价格、订单簿、资金费率、K线
+- **账户查询**：余额、持仓、订单、成交记录
+- **交易操作**：买入、卖出、平仓、撤单
+- **杠杆管理**：设置杠杆、调整保证金
+- **资金操作**：转账、提现
+- **质押操作**：HYPE 质押、解除质押
+
+### 2. 安全检查（交易前必做）
+
+执行交易前必须：
+
+1. **确认参数**：向用户确认币种、数量、方向、价格
+2. **显示当前状态**：当前价格、现有持仓
+3. **估算成本**：计算预估花费/收益
+4. **仓位警告**：若交易额 > 账户权益 20%，发出警告
+5. **价格检查**：限价单价格偏离市价 >5% 时提醒用户
+
+### 3. 执行步骤
+
+#### 查询价格
 
 ```bash
-# 从 PyPI 安装
-pip install hyperliquid-trading
-
-# 或使用 uv
-uv pip install hyperliquid-trading
+hl market prices <COIN> -n mainnet
 ```
 
-### 方式二：源码安装
+#### 条件交易
+
+当用户给出条件（如"价格低于 X 则买入 Y"）：
+
+1. 先查询当前价格
+2. 判断是否满足条件
+3. 若满足，计算数量 = 金额 / 价格
+4. 执行交易
+
+#### 买入/卖出
 
 ```bash
-# 克隆项目
-git clone <repo-url>
-cd hyperliquid-trading
+# 市价买入（跳过确认）
+hl trade buy <COIN> <SIZE> -y
 
-# 安装依赖
-uv sync
+# 限价买入
+hl trade buy <COIN> <SIZE> -p <PRICE>
 
-# 安装 hyperliquid-trading
-pip install -e .
-# 或使用 uv
-
-uv pip install -e .
+# 卖出
+hl trade sell <COIN> <SIZE> -p <PRICE>
 ```
 
-## 环境要求
-
-- Python >= 3.10
-- pip 或 uv 包管理器
-
-### 检查环境
+#### 设置杠杆（交易前建议先设置）
 
 ```bash
-# 检查 Python 版本
-python --version  # 需要 >= 3.10
-
-# 检查 pip
-pip --version
-
-# 或检查 uv（推荐）
-uv --version
+hl leverage set <COIN> <VALUE> [--cross]
 ```
+
+#### 查看持仓/账户
+
+```bash
+hl account state
+hl account orders
+```
+
+### 4. 错误处理
+
+| 错误                 | 解决方案                            |
+| -------------------- | ----------------------------------- |
+| Address required     | 设置 HL_ACCOUNT_ADDRESS 环境变量    |
+| Private key required | 交易操作需要设置 HL_SECRET_KEY      |
+| Unknown coin         | 用 `hl market context` 查看可用币种 |
+| 余额不足             | 提示充值或减少交易量                |
+| 网络错误             | 检查网络连接，重试                  |
+| 交易失败             | 最多重试 3 次，仍失败则告警用户     |
+
+**注意**：交易失败不要自动重试，先告知用户错误原因。
+
+## 工作流示例
+
+### 查看组合
+
+1. `hl account state` 获取总权益
+2. `hl account orders` 查看挂单
+3. 汇总输出：权益、持仓及盈亏、挂单
+
+### 买入操作
+
+1. `hl market prices <COIN>` 获取当前价格
+2. `hl account state` 确认余额充足
+3. 向用户确认："市价买入 X 数量？当前价格 $Y，预估花费 $Z"
+4. 执行 `hl trade buy <COIN> <SIZE> -y`
+5. 报告执行结果
+
+### 条件交易
+
+1. `hl market prices <COIN>` 获取价格
+2. 判断是否满足条件
+3. 若满足，计算数量并确认
+4. 执行交易
+5. 报告结果
+
+### 平仓操作
+
+1. `hl account state` 获取当前持仓方向和数量
+2. 多头用 sell，空头用 buy
+3. 执行平仓
+4. 报告结果
+
+## 快速命令参考
+
+| 场景       | 命令                                            |
+| ---------- | ----------------------------------------------- |
+| 查价格     | `hl market prices <COIN> -n mainnet`            |
+| 查持仓     | `hl account state`                              |
+| 查挂单     | `hl account orders`                             |
+| 查成交     | `hl account fills -l 20`                        |
+| 市价买入   | `hl trade buy <COIN> <SIZE> -y`                 |
+| 限价买入   | `hl trade buy <COIN> <SIZE> -p <PRICE>`         |
+| 平仓       | `hl trade close <COIN>`                         |
+| 设置杠杆   | `hl leverage set <COIN> <VALUE>`                |
+| 查资金费率 | `hl market funding <COIN>`                      |
+| 查订单簿   | `hl market book <COIN>`                         |
+| 查 K 线    | `hl market candles <COIN> -i 1h -H 24`          |
+| 撤销订单   | `hl trade cancel <COIN> <ORDER_ID>`             |
+| 撤销全部   | `hl trade cancel-all -y`                        |
+| 转账       | `hl transfer send <ADDRESS> <AMOUNT>`           |
+| 提现       | `hl transfer withdraw <ADDRESS> <AMOUNT> -y`    |
+| 质押 HYPE  | `hl staking delegate <VALIDATOR> <AMOUNT> -y`   |
+| 解除质押   | `hl staking undelegate <VALIDATOR> <AMOUNT> -y` |
 
 ## 环境配置
 
-```bash
-# 初始化配置（交互式）
-hl init
+| 变量名             | 说明                          | 默认值  |
+| ------------------ | ----------------------------- | ------- |
+| HL_NETWORK         | 网络                          | testnet |
+| HL_ACCOUNT_ADDRESS | 钱包地址                      | -       |
+| HL_SECRET_KEY      | 私钥                          | -       |
+| HL_API_SECRET_KEY  | API 钱包私钥                  | 可选    |
+| HL_LOG_LEVEL       | 日志级别                      | INFO    |
+| HL_LANGUAGE        | 表格渲染语言设置: en 或 zh-CN | en      |
 
-# 或手动创建 .env
-cp .env.example .env
-```
+配置方式（二选一）：
 
-## 验证安装
-
-```bash
-# 检查是否安装成功
-hl version
-
-```
-
-## 配置说明
-
-`.env` 文件必需配置：
-
-```env
-HL_NETWORK=testnet              # mainnet 或 testnet
-HL_ACCOUNT_ADDRESS=0x...        # 钱包地址
-HL_SECRET_KEY=0x...             # 私钥（交易必需）
-HL_API_SECRET_KEY=              # API钱包私钥（可选）
-HL_LOG_LEVEL=INFO               # 日志级别
-```
-
-## 多账号管理
-
-支持通过不同的 `.env` 文件管理多个账号，方便在测试网、主网、不同钱包之间切换。
-
-### 环境文件命名
-
-```
-.env           # 默认配置（当前使用）
-.env.test      # 测试网账号
-.env.prod      # 主网账号
-.env.wallet1   # 钱包1
-.env.wallet2   # 钱包2
-```
-
-### 切换账号
-
-**方式一：指定环境文件 (-e)**
+**方式一：.env 文件**
 
 ```bash
-# 使用测试网账号
+hl init  # 交互式创建
+```
+
+**方式二：系统环境变量**
+
+```bash
+# Windows
+set HL_NETWORK=mainnet
+set HL_ACCOUNT_ADDRESS=0x...
+set HL_SECRET_KEY=0x...
+
+# Unix/Mac
+export HL_NETWORK=mainnet
+export HL_ACCOUNT_ADDRESS=0x...
+export HL_SECRET_KEY=0x...
+```
+
+## 多账号支持
+
+```bash
+hl -e .env.prod trade buy BTC 0.01 -y
 hl -e .env.test account state
-
-# 使用主网账号交易
-hl -e .env.prod trade buy BTC 0.01 -p 65000
-
-# 使用指定钱包
-hl -e .env.wallet1 account orders
 ```
 
-## 命令速查
-
-### 市场数据 (market)
+## 常用选项
 
 ```bash
-# 获取价格
-hl market prices [COIN1] [COIN2]... [-n mainnet|testnet]
-
-# 查看订单簿
-hl market book <COIN> [-d 10] [-n testnet]
-
-# 获取资产参数（含最大杠杆倍率，设置杠杆前可先查询）
-hl market context [COIN...] [-n testnet]
-
-# 获取资金费率
-hl market funding <COIN> [-n testnet] [-l 10]
-
-# 获取 K 线数据
-hl market candles <COIN> [-i 1h] [-H 24 | -d 30] [-n mainnet]
+-e /path/to/.env   # 指定环境文件
+-n mainnet|testnet # 指定网络
+-y, --yes          # 跳过确认
+-v                 # 详细日志
+--json, -j         # JSON 输出
+--lang, -l         # 设置表格输出语言  zh-CN/en
 ```
 
-### 账户信息 (account)
-
-```bash
-# 账户状态（余额、持仓）
-hl account state [-a <ADDRESS>]
-
-# 未成交订单
-hl account orders [-a <ADDRESS>]
-
-# 成交历史
-hl account fills [-a <ADDRESS>] [-l 20]
-
-# 资金费用历史
-hl account funding [-a <ADDRESS>] [-l 20]
-
-# 质押奖励历史
-hl account rewards [-a <ADDRESS>]
-```
-
-### 交易操作 (trade)
-
-> **注意**：交易会使用该币种上次设置的杠杆倍率。如不确定当前杠杆，建议先执行 `hl leverage set <COIN> <VALUE>` 确认设置。
-
-```bash
-# 买入限价单
-hl trade buy <COIN> <SIZE> -p <PRICE> [--cloid <ID>]
-
-# 买入市价单（跳过确认）
-hl trade buy <COIN> <SIZE> -y
-
-# 卖出限价单
-hl trade sell <COIN> <SIZE> -p <PRICE> [--reduce-only]
-
-# 卖出市价单
-hl trade sell <COIN> <SIZE> [--reduce-only]
-
-# 取消订单
-hl trade cancel <COIN> <ORDER_ID>
-
-# 取消所有订单（跳过确认）
-hl trade cancel-all [-c <COIN>] -y
-
-# 修改订单
-hl trade modify <COIN> <ORDER_ID> <NEW_SIZE> <NEW_PRICE>
-
-# 平仓
-hl trade close <COIN>
-```
-
-### 杠杆管理 (leverage)
-
-```bash
-# 设置杠杆
-hl leverage set <COIN> <VALUE> [--cross]
-
-# 调整逐仓保证金
-hl leverage margin <COIN> <AMOUNT>
-```
-
-### 转账提现 (transfer)
-
-```bash
-# 内部转账
-hl transfer send <DESTINATION> <AMOUNT> [--token USDC]
-
-# 跨链提现（跳过确认）
-hl transfer withdraw <DESTINATION> <AMOUNT> -y
-```
-
-### 质押功能 (staking)
-
-HYPE 代币质押相关命令，支持查询验证者、委托质押、解除质押等操作。
-
-```bash
-# 查看质押摘要（已质押、待解除数量）
-hl staking summary [-a <ADDRESS>]
-
-# 查看验证者列表
-hl staking validators [-l 30] [--sort stake|commission|name]
-
-# 查看质押委托
-hl staking delegations [-a <ADDRESS>]
-
-# 查看质押奖励历史
-hl staking rewards [-a <ADDRESS>] [-l 20]
-
-# 查看质押历史（委托/解除委托记录）
-hl staking history [-a <ADDRESS>] [-l 20]
-
-# 质押 HYPE 到验证者（需要私钥）
-hl staking delegate <VALIDATOR_ADDRESS> <AMOUNT> -y
-
-# 解除质押（需要私钥）
-hl staking undelegate <VALIDATOR_ADDRESS> <AMOUNT> -y
-```
-
-## 使用示例
-
-### 查询市场
-
-```bash
-# 查询 BTC/ETH 价格
-hl market prices BTC ETH -n mainnet
-
-# 查询 所有价格（数据量过大，不建议使用）
-hl market prices  -n mainnet
-
-# 查看 BTC 订单簿前 5 档
-hl market book BTC -d 5 -n mainnet
-
-# 查看 ETH 资金费率
-hl market funding ETH -n mainnet -l 5
-
-# 查看 BTC 最近 24 小时 1 小时 K 线
-hl market candles BTC -i 1h -H 24 -n mainnet
-
-# 查看 ETH 最近 30 天日 K 线
-hl market candles ETH -i 1d -d 30 -n mainnet
-
-# 查看 BTC 最近 1 年周 K 线
-hl market candles BTC -i 1w -d 365 -n mainnet
-
-# 查看 BTC 最近 1 年月 K 线
-hl market candles BTC -i 1M -d 365 -n mainnet
-
-# 查看 BTC 最近 1 年季度 K 线
-hl market candles BTC -i 3M -d 365 -n mainnet
-
-# 查看 BTC 最近 1 年半年 K 线
-hl market candles BTC -i 6M -d 365 -n mainnet
-
-# 查询 所有参数（数据量过大，不建议使用）
-hl market prices  -n mainnet
-
-# 查询 BTC ETH 资产交易参数
-hl market context BTC ETH -n mainnet
-
-# 查询 所有可交易的资产交易参数（数据量过大，不建议使用）
-hl market context -n mainnet
-
-
-```
-
-### 交易操作
-
-```bash
-# 测试网买入 0.1 BTC 限价单 @ 65000
-hl trade buy BTC 0.1 -p 65000
-
-# 测试网市价卖出 0.05 ETH
-hl trade sell ETH 0.05
-
-# 设置 BTC 杠杆为 10x 全仓
-hl leverage set BTC 10 --cross
-
-# 平掉 BTC 仓位
-hl trade close BTC
-```
-
-### 账户查询
-
-```bash
-# 查看账户概览
-hl account state
-
-# 查看最近 10 笔成交
-hl account fills -l 10
-
-# 查看资金费用
-hl account funding -l 20
-```
-
-### 质押操作
-
-```bash
-# 查看质押摘要
-hl staking summary
-
-# 查看验证者列表（按质押量排序，显示前 10 个）
-hl staking validators -l 10 --sort stake
-
-# 查看验证者列表（按佣金率排序）
-hl staking validators --sort commission
-
-# 查看当前委托
-hl staking delegations
-
-# 查看质押奖励
-hl staking rewards -l 10
-
-# 质押 10 HYPE 到指定验证者
-hl staking delegate 0x1234... 10 -y
-
-# 解除 5 HYPE 质押
-hl staking undelegate 0x1234... 5 -y
-```
-
-## 安全提示
-
-1. **密钥安全**: 永远不要直接读取配置文件
-2. **失败兜底**: 交易过程中发生异常最大重试次数不得超过3次，需告警用户协助排查解决
-3. **小额测试**: 首次使用建议先用小额测试
-
-## 常见问题
-
-### 网络选择
-
-- `testnet`: 测试网，无风险，用于开发和测试
-- `mainnet`: 主网，真实资金，谨慎操作
-
-### 订单类型
-
-- 限价单: 指定价格，`-p <PRICE>`
-- 市价单: 不指定价格，按最优价格成交
-- Reduce-only: 只减仓，不开新仓
-
-### 全局选项
-
-```bash
-# 指定环境文件
-hl -e /path/to/.env <command>
-
-# 启用详细日志
-hl -v <command>
-
-# 输出原始 JSON 格式（适用于 market/account 命令）
-hl --json market prices BTC ETH
-hl -j account state
-
-# 跳过确认（适用于 trade/leverage/transfer 命令）
-hl <command> -y
-hl <command> --yes
-
-# 查看版本
-hl version
-```
-
-> **JSON 输出结构文档**: [references/output_json_schema.md](references/output_json_schema.md)
-
-## 项目结构
-
-```
-hyperliquid-trading/
-├── scripts/
-│   ├── cli.py                 # CLI 主程序
-│   ├── config.py              # 配置管理
-│   └── hyperliquid_client.py  # SDK 封装
-├── references/
-│   └── output_json_schema.md  # JSON 输出结构文档
-├── .env.example               # 环境变量示例
-├── pyproject.toml             # 项目配置
-└── SKILL.md                   # 本文档
-```
-
-## 参考链接
-
-- [Hyperliquid 官方文档](https://hyperliquid.gitbook.io/hyperliquid-docs/)
-- [Python SDK GitHub](https://github.com/hyperliquid-dex/hyperliquid-python-sdk)
+## 约束
+
+1. **安全第一**：交易前必须向用户确认参数
+2. **仓位警告**：大额交易（>20% 权益）必须警告
+3. **价格检查**：限价偏离市价 >5% 必须提醒
+4. **私钥安全**：永远不要读取或泄露私钥
+5. **重试限制**：交易失败最多 3 次，失败后告知用户
+6. **小额优先**：首次使用建议小额测试

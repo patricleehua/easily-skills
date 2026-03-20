@@ -1,0 +1,127 @@
+{
+  "common": {
+    "enabled": "enabled",
+    "disabled": "disabled",
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info",
+    "yes": "Yes",
+    "no": "No",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "no_data": "No data available",
+    "updated": "Updated"
+  },
+  "account": {
+    "title": "Account Overview",
+    "position_details": "Position Details",
+    "total_value": "Total Account Value",
+    "position_value": "Total Position Value",
+    "available_margin": "Available Margin",
+    "margin_used": "Margin Used",
+    "withdrawable": "Withdrawable",
+    "total_unrealized_pnl": "Total Unrealized P&L"
+  },
+  "risk": {
+    "title": "Risk Metrics",
+    "margin_utilization": "Margin Utilization",
+    "position_ratio": "Position Ratio",
+    "leverage": "Leverage"
+  },
+  "position": {
+    "asset": "Asset",
+    "amount": "Amount",
+    "leverage": "Leverage",
+    "entry_price": "Entry Price",
+    "current_value": "Current Value",
+    "unrealized_pnl": "Unrealized P&L",
+    "roe": "ROE",
+    "liquidation_price": "Liquidation Price",
+    "margin_ratio": "Margin Ratio"
+  },
+  "order": {
+    "title": "Open Orders",
+    "no_orders": "No open orders",
+    "coin": "Coin",
+    "side": "Side",
+    "size": "Size",
+    "price": "Price",
+    "order_id": "Order ID",
+    "buy": "Buy",
+    "sell": "Sell",
+    "cancel_success": "Order {oid} cancelled successfully",
+    "cancel_failed": "Failed to cancel order {oid}"
+  },
+  "fill": {
+    "title": "Fill History",
+    "no_fills": "No fill history",
+    "coin": "Coin",
+    "side": "Side",
+    "size": "Size",
+    "price": "Price",
+    "time": "Time",
+    "pnl": "P&L"
+  },
+  "trade": {
+    "title": "Trade",
+    "market": "Market",
+    "limit": "Limit",
+    "buy": "Buy",
+    "sell": "Sell",
+    "size": "Size",
+    "price": "Price",
+    "leverage": "Leverage",
+    "order_placed": "Order placed successfully",
+    "order_failed": "Failed to place order",
+    "reduce_only": "Reduce Only",
+    "slippage": "Slippage"
+  },
+  "market": {
+    "price": "Price",
+    "prices": "Market Prices",
+    "book": "Order Book",
+    "bids": "Bids",
+    "asks": "Asks",
+    "funding_rate": "Funding Rate",
+    "funding_history": "Funding History",
+    "candles": "Candlestick Data",
+    "context": "Asset Context"
+  },
+  "staking": {
+    "title": "Staking",
+    "validators": "Validators",
+    "delegations": "Delegations",
+    "rewards": "Rewards",
+    "summary": "Staking Summary",
+    "delegate": "Delegate",
+    "undelegate": "Undelegate",
+    "stake": "Stake",
+    "commission": "Commission",
+    "delegators": "Delegators"
+  },
+  "transfer": {
+    "title": "Transfer",
+    "deposit": "Deposit",
+    "withdraw": "Withdraw",
+    "amount": "Amount",
+    "destination": "Destination",
+    "fee": "Fee"
+  },
+  "config": {
+    "title": "Configuration",
+    "network": "Network",
+    "address": "Address",
+    "language": "Language",
+    "log_level": "Log Level",
+    "setup_prompt": "Run 'hl init' to set up configuration",
+    "errors": {
+      "address_required": "HL_ACCOUNT_ADDRESS is required",
+      "secret_key_required": "HL_SECRET_KEY is required for trading operations"
+    }
+  },
+  "time": {
+    "last_updated": "Last Updated"
+  }
+}

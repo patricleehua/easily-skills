@@ -30,6 +30,7 @@ A powerful command-line trading tool for Hyperliquid DEX, built with Python SDK.
 - **Staking**: View validators, delegate/undelegate HYPE, track rewards
 - **Transfers**: Internal transfers, cross-chain withdrawals
 - **Multi-Account**: Switch between multiple accounts via different `.env` files
+- **Multi-Language**: Support for English and Chinese (中文) output
 - **Dual Network**: Mainnet and Testnet support
 - **JSON Output**: Raw JSON output with `--json` flag for scripting and automation
 
@@ -61,6 +62,7 @@ HL_ACCOUNT_ADDRESS=0x...        # Wallet address
 HL_SECRET_KEY=0x...             # Private key (required for trading)
 HL_API_SECRET_KEY=              # API wallet key (optional)
 HL_LOG_LEVEL=INFO               # Log level
+HL_LANGUAGE=en                  # Language: en or zh-CN
 ```
 
 ### Usage Examples
@@ -191,11 +193,31 @@ hl -e /path/to/.env <command>   # Specify env file
 hl -v <command>                  # Verbose logging
 hl --json <command>              # Output raw JSON (for market/account commands)
 hl -j <command>                  # Output raw JSON (shorthand)
+hl --lang zh-CN <command>        # Set output language (en/zh-CN)
+hl -l zh-CN <command>            # Set language (shorthand)
 hl <command> -y                  # Skip confirmation
 hl version                       # Show version
 ```
 
 > **JSON Output Schema**: See [references/output_json_schema.md](references/output_json_schema.md) for detailed JSON structure documentation.
+
+### Multi-Language Support | 多语言支持
+
+CLI supports multiple languages for output. You can set the language in three ways:
+
+```bash
+# Method 1: Command line flag
+uv run hl --lang zh-CN account state
+
+# Method 2: Environment variable
+export HL_LANGUAGE=zh-CN
+uv run hl account state
+
+# Method 3: .env file configuration
+HL_LANGUAGE=zh-CN
+```
+
+Supported languages: `en` (English), `zh-CN` (简体中文)
 
 ### Security Notes
 
@@ -218,6 +240,7 @@ hl version                       # Show version
 - **杠杆管理**: 调整杠杆、保证金操作（全仓/逐仓）
 - **转账功能**: 内部转账、跨链提现
 - **多账号管理**: 通过不同的 `.env` 文件切换账号
+- **多语言支持**: 支持英文和中文输出
 - **双网支持**: 主网(Mainnet)和测试网(Testnet)
 - **JSON输出**: 支持 `--json` 参数输出原始JSON，便于脚本化和自动化
 
@@ -249,6 +272,7 @@ HL_ACCOUNT_ADDRESS=0x...        # 钱包地址
 HL_SECRET_KEY=0x...             # 私钥（交易必需）
 HL_API_SECRET_KEY=              # API钱包私钥（可选）
 HL_LOG_LEVEL=INFO               # 日志级别
+HL_LANGUAGE=zh-CN               # 语言: en 或 zh-CN
 ```
 
 ### 使用示例
@@ -379,6 +403,8 @@ hl -e /path/to/.env <command>   # 指定环境文件
 hl -v <command>                  # 详细日志
 hl --json <command>              # 输出原始JSON（适用于market/account命令）
 hl -j <command>                  # 输出原始JSON（简写）
+hl --lang zh-CN <command>        # 设置输出语言 (en/zh-CN)
+hl -l zh-CN <command>            # 设置语言（简写）
 hl <command> -y                  # 跳过确认
 hl version                       # 查看版本
 ```
@@ -401,7 +427,11 @@ hyperliquid-trading/
 ├── scripts/
 │   ├── cli.py                 # CLI main entry | CLI主程序
 │   ├── config.py              # Configuration management | 配置管理
-│   └── hyperliquid_client.py  # SDK wrapper | SDK封装
+│   ├── hyperliquid_client.py  # SDK wrapper | SDK封装
+│   └── i18n.py                # Internationalization | 国际化模块
+├── locales/
+│   ├── en.json                # English translations | 英文翻译
+│   └── zh-CN.json             # Chinese translations | 中文翻译
 ├── references/
 │   └── output_json_schema.md  # JSON output schema | JSON输出结构文档
 ├── .env.example               # Environment template | 环境变量模板
