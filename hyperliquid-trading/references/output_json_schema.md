@@ -14,6 +14,67 @@ uv run hl -j <command>
 
 ---
 
+## Calc Commands
+
+### calc size
+
+计算 USD 金额对应的代币数量。
+
+**命令**: `hl --json calc size <COIN> <USD_AMOUNT> [-l leverage] [-n mainnet|testnet]`
+
+> **注意**: `-j/--json` 是全局选项，必须放在 `calc` 之前。
+
+**输出结构**:
+```json
+{
+  "coin": "BTC",
+  "input_amount_usd": 20.0,
+  "leverage": 1.0,
+  "current_price": 70502.5,
+  "calculated_size": 0.00029,
+  "sz_decimals": 5,
+  "min_size": 0.00001,
+  "min_notional_usd": 0.705,
+  "meets_minimum": true,
+  "notional_value": 20.44,
+  "max_leverage": 40
+}
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `coin` | string | 币种名称 |
+| `input_amount_usd` | number | 输入的 USD 金额 |
+| `leverage` | number | 杠杆倍数 |
+| `current_price` | number | 当前价格 |
+| `calculated_size` | number | 计算出的数量 (已按 sz_decimals 取整) |
+| `sz_decimals` | number | 数量小数位 |
+| `min_size` | number | 最小交易数量 |
+| `min_notional_usd` | number | 最小名义价值 (USD) |
+| `meets_minimum` | boolean | 是否满足最小要求 |
+| `notional_value` | number | 名义价值 (size * price) |
+| `max_leverage` | number | 该币种最大杠杆 |
+
+**计算公式**:
+```
+calculated_size = (input_amount_usd * leverage) / current_price
+notional_value = calculated_size * current_price
+```
+
+**示例**:
+```bash
+# 基础用法
+uv run hl --json calc size BTC 20 -n mainnet
+
+# 带杠杆
+uv run hl --json calc size SOL 100 -l 5 -n mainnet
+
+# 高杠杆 (会触发警告)
+uv run hl --json calc size ETH 50 -l 20 -n mainnet
+```
+
+---
+
 ## Market Commands
 
 ### market prices
@@ -709,6 +770,7 @@ uv run hl --json staking history -l 20
 
 | 命令 | 空结果 |
 |------|--------|
+| `calc size` | 报错: `Coin 'XXX' not found` |
 | `market prices` | `{}` |
 | `market book` | `{"coin": "XXX", "time": 0, "levels": [[], []]}` |
 | `market context` | `{"universe": []}` |

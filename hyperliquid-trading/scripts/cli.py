@@ -110,6 +110,127 @@ def init():
     setup_config_interactive()
 
 
+# ==================== Calc Commands ====================
+
+@cli.group()
+def calc():
+    """Calculation commands for trading."""
+    pass
+
+
+@calc.command(name="size")
+@click.argument("coin")
+@click.argument("amount", type=float)
+@click.option("--leverage", "-l", type=float, default=1.0, help="Leverage multiplier (default: 1)")
+@click.option("--network", "-n", default="testnet", help="Network (mainnet/testnet)")
+@click.pass_context
+def calc_size(ctx, coin: str, amount: float, leverage: float, network: str):
+    """Calculate position size from USD amount.
+
+    COIN: Token symbol (e.g., BTC, ETH, SOL)
+    AMOUNT: USD amount to trade
+
+    Examples:
+        hl calc size BTC 20
+        hl calc size SOL 100 --leverage 5
+        hl calc size ETH 50 -l 10 -n mainnet
+    """
+    from decimal import Decimal, ROUND_UP
+
+    lang = ctx.obj.get("lang", "en")
+    client = get_info_client(network)
+    try:
+        # Get current price
+        prices = client.get_all_mids()
+        coin = coin.upper()
+        if coin not in prices:
+            console.print(f"[red]{t('common.error', lang)}: Coin '{coin}' {t('common.no_data', lang).lower()}[/red]")
+            return
+
+        price = float(prices[coin])
+
+        # Get asset context for szDecimals
+        contexts = client.get_asset_contexts()
+        universe = contexts.get("universe", [])
+        asset_info = next((a for a in universe if a.get("name") == coin), None)
+
+        sz_decimals = asset_info.get("szDecimals", 4) if asset_info else 4
+        max_leverage = asset_info.get("maxLeverage", 50) if asset_info else 50
+
+        # Calculate size
+        # size = (amount * leverage) / price
+        size = (amount * leverage) / price
+
+        # Round to szDecimals (using ROUND_UP to ensure minimum viable size)
+        if sz_decimals:
+            size = float(Decimal(str(size)).quantize(Decimal(10) ** -sz_decimals, rounding=ROUND_UP))
+
+        # Calculate minimum size based on price
+        # Typical min notional is around $1-10 depending on coin
+        min_size = 10 ** -sz_decimals
+        min_notional = min_size * price
+
+        # Check if calculated size meets minimum
+        meets_min = size >= min_size
+
+        # Calculate effective notional value
+        notional_value = size * price
+
+        result = {
+            "coin": coin,
+            "input_amount_usd": amount,
+            "leverage": leverage,
+            "current_price": price,
+            "calculated_size": size,
+            "sz_decimals": sz_decimals,
+            "min_size": min_size,
+            "min_notional_usd": min_notional,
+            "meets_minimum": meets_min,
+            "notional_value": notional_value,
+            "max_leverage": max_leverage,
+        }
+
+        if ctx.obj.get("output_json"):
+            output_result(ctx, result)
+            return
+
+        # Human-readable output
+        console.print(f"\n[bold cyan]{t('calc.title', lang, coin=coin)}[/bold cyan]\n")
+
+        table = Table(show_header=False, box=None)
+        table.add_column("Key", style="dim")
+        table.add_column("Value", justify="right")
+
+        table.add_row(t("calc.input_amount", lang), f"${amount:,.2f} USD")
+        table.add_row(t("risk.leverage", lang), f"{leverage}x")
+        table.add_row(t("market.price", lang), f"${price:,.4f}")
+        table.add_row(f"Max {t('risk.leverage', lang)}", f"{max_leverage}x")
+        table.add_row("", "")
+        table.add_row(f"[bold]{t('calc.calculated_size', lang)}[/bold]", f"[bold green]{size:.{sz_decimals}f} {coin}[/bold green]")
+        table.add_row(t("calc.notional_value", lang), f"${notional_value:,.2f}")
+        table.add_row("", "")
+        table.add_row(t("calc.size_decimals", lang), str(sz_decimals))
+        table.add_row(t("calc.min_size", lang), f"{min_size:.{sz_decimals}f} {coin}")
+        table.add_row(t("calc.min_notional", lang), f"~${min_notional:.4f}")
+
+        console.print(table)
+
+        if meets_min:
+            console.print(f"\n[green][OK] {t('calc.meets_minimum', lang)}[/green]")
+        else:
+            console.print(f"\n[red][X] {t('calc.below_minimum', lang, size=f'{min_size:.{sz_decimals}f}', coin=coin)}[/red]")
+            console.print(f"[yellow]  {t('calc.tip_increase', lang)}[/yellow]")
+
+        # Warning for high leverage
+        if leverage >= 10:
+            console.print(f"\n[yellow]{t('calc.high_leverage_warning', lang, leverage=leverage)}[/yellow]")
+        if leverage >= 20:
+            console.print(f"[red]{t('calc.extreme_leverage_warning', lang, leverage=leverage)}[/red]")
+
+    finally:
+        client.close()
+
+
 # ==================== Market Data Commands ====================
 
 @cli.group()
@@ -124,6 +245,7 @@ def market():
 @click.pass_context
 def market_prices(ctx, coins: tuple, network: str):
     """Get market prices. Optional COINS to filter (space-separated)."""
+    lang = ctx.obj.get("lang", "en")
     client = get_info_client(network)
     try:
         prices = client.get_all_mids()
@@ -137,20 +259,20 @@ def market_prices(ctx, coins: tuple, network: str):
 
         if coins:
             coins = [c.upper() for c in coins]
-            table = Table(title="Market Prices")
-            table.add_column("Asset", style="cyan")
-            table.add_column("Price", justify="right", style="green")
+            table = Table(title=t("market.prices", lang))
+            table.add_column(t("position.asset", lang), style="cyan")
+            table.add_column(t("market.price", lang), justify="right", style="green")
             for c in coins:
                 if c in prices:
                     table.add_row(c, f"${float(prices[c]):,.2f}")
                 else:
-                    table.add_row(c, "[red]Not found[/red]")
+                    table.add_row(c, f"[red]{t('common.no_data', lang)}[/red]")
             console.print(table)
             return
 
-        table = Table(title="Market Prices")
-        table.add_column("Asset", style="cyan")
-        table.add_column("Price", justify="right", style="green")
+        table = Table(title=t("market.prices", lang))
+        table.add_column(t("position.asset", lang), style="cyan")
+        table.add_column(t("market.price", lang), justify="right", style="green")
 
         for c, price in sorted(prices.items()):
             table.add_row(c, f"${float(price):,.2f}")
@@ -167,6 +289,7 @@ def market_prices(ctx, coins: tuple, network: str):
 @click.pass_context
 def market_book(ctx, coin: str, depth: int, network: str):
     """Get order book for a coin."""
+    lang = ctx.obj.get("lang", "en")
     client = get_info_client(network)
     try:
         book = client.get_l2_book(coin.upper())
@@ -175,11 +298,11 @@ def market_book(ctx, coin: str, depth: int, network: str):
             output_result(ctx, book)
             return
 
-        table = Table(title=f"Order Book - {coin.upper()}")
-        table.add_column("Bid Price", justify="right", style="green")
-        table.add_column("Bid Size", justify="right")
-        table.add_column("Ask Price", justify="right", style="red")
-        table.add_column("Ask Size", justify="right")
+        table = Table(title=f"{t('market.book', lang)} - {coin.upper()}")
+        table.add_column(f"{t('market.bids', lang)} {t('market.price', lang)}", justify="right", style="green")
+        table.add_column(f"{t('market.bids', lang)} {t('trade.size', lang)}", justify="right")
+        table.add_column(f"{t('market.asks', lang)} {t('market.price', lang)}", justify="right", style="red")
+        table.add_column(f"{t('market.asks', lang)} {t('trade.size', lang)}", justify="right")
 
         bids = book.get("levels", [[]])[0][:depth]
         asks = book.get("levels", [[], []])[1][:depth]
@@ -202,6 +325,7 @@ def market_book(ctx, coin: str, depth: int, network: str):
 @click.pass_context
 def market_context(ctx, coins: tuple, network: str):
     """Get asset contexts (trading parameters). Optional COINS to filter (space-separated)."""
+    lang = ctx.obj.get("lang", "en")
     client = get_info_client(network)
     try:
         contexts = client.get_asset_contexts()
@@ -216,9 +340,9 @@ def market_context(ctx, coins: tuple, network: str):
 
         if coins:
             coins = [c.upper() for c in coins]
-            table = Table(title="Asset Contexts")
-            table.add_column("Coin", style="cyan")
-            table.add_column("Max Leverage")
+            table = Table(title=t("market.context", lang))
+            table.add_column(t("position.asset", lang), style="cyan")
+            table.add_column(t("risk.leverage", lang))
             table.add_column("Size Decimals")
             for c in coins:
                 asset = next((a for a in universe if a.get("name") == c), None)
@@ -229,13 +353,13 @@ def market_context(ctx, coins: tuple, network: str):
                         str(asset.get("szDecimals", "N/A")),
                     )
                 else:
-                    table.add_row(c, "[red]Not found[/red]", "")
+                    table.add_row(c, f"[red]{t('common.no_data', lang)}[/red]", "")
             console.print(table)
             return
 
-        table = Table(title="Asset Contexts")
-        table.add_column("Coin", style="cyan")
-        table.add_column("Max Leverage")
+        table = Table(title=t("market.context", lang))
+        table.add_column(t("position.asset", lang), style="cyan")
+        table.add_column(t("risk.leverage", lang))
         table.add_column("Size Decimals")
 
         for asset in universe:
@@ -274,6 +398,8 @@ def market_candles(ctx, coin: str, interval: str, hours: Optional[int], days: Op
     import time
     from datetime import datetime
 
+    lang = ctx.obj.get("lang", "en")
+
     # Aggregated intervals need 1d data
     aggregated_intervals = {"1w": 7, "1M": 30, "3M": 90, "6M": 180}
     is_aggregated = interval in aggregated_intervals
@@ -303,7 +429,7 @@ def market_candles(ctx, coin: str, interval: str, hours: Optional[int], days: Op
             if ctx.obj.get("output_json"):
                 output_result(ctx, {"coin": coin.upper(), "candles": []})
             else:
-                console.print(f"[yellow]No candle data found for {coin.upper()}[/yellow]")
+                console.print(f"[yellow]{t('common.no_data', lang)} ({coin.upper()})[/yellow]")
             return
 
         # Aggregate candles if needed
@@ -315,8 +441,8 @@ def market_candles(ctx, coin: str, interval: str, hours: Optional[int], days: Op
             return
 
         tz = get_timezone_str()
-        table = Table(title=f"{coin.upper()} Candles ({interval}) [{tz}]")
-        table.add_column("Time", style="cyan")
+        table = Table(title=f"{coin.upper()} {t('market.candles', lang)} ({interval}) [{tz}]")
+        table.add_column(t("fill.time", lang), style="cyan")
         table.add_column("Open", justify="right", style="green")
         table.add_column("High", justify="right", style="green")
         table.add_column("Low", justify="right", style="red")
@@ -324,7 +450,7 @@ def market_candles(ctx, coin: str, interval: str, hours: Optional[int], days: Op
         table.add_column("Volume", justify="right")
 
         for candle in candles[-limit:]:
-            t = format_timestamp(candle.get("t", 0))
+            ts = format_timestamp(candle.get("t", 0))
             o = float(candle.get("o", 0))
             h = float(candle.get("h", 0))
             l = float(candle.get("l", 0))
@@ -335,7 +461,7 @@ def market_candles(ctx, coin: str, interval: str, hours: Optional[int], days: Op
             close_str = f"${c:,.2f}" if c >= o else f"[red]${c:,.2f}[/red]"
 
             table.add_row(
-                t,
+                ts,
                 f"${o:,.2f}",
                 f"${h:,.2f}",
                 f"${l:,.2f}",
@@ -379,6 +505,7 @@ def _aggregate_candles(candles: list[dict], days_per_candle: int) -> list[dict]:
 @click.pass_context
 def market_funding(ctx, coin: str, network: str, limit: int):
     """Get recent funding rate for a coin."""
+    lang = ctx.obj.get("lang", "en")
     client = get_info_client(network)
     try:
         funding = client.get_recent_funding(coin.upper())
@@ -387,9 +514,9 @@ def market_funding(ctx, coin: str, network: str, limit: int):
             output_result(ctx, {"coin": coin.upper(), "funding": funding[:limit]})
             return
 
-        table = Table(title=f"{coin.upper()} Funding History [{get_timezone_str()}]")
-        table.add_column("Time", style="cyan")
-        table.add_column("Funding Rate", justify="right")
+        table = Table(title=f"{coin.upper()} {t('market.funding_history', lang)} [{get_timezone_str()}]")
+        table.add_column(t("fill.time", lang), style="cyan")
+        table.add_column(t("market.funding_rate", lang), justify="right")
         table.add_column("Premium", justify="right")
 
         for record in funding[:limit]:
@@ -533,6 +660,7 @@ def account_state(ctx, address: Optional[str]):
 @click.pass_context
 def account_orders(ctx, address: Optional[str]):
     """Get open orders."""
+    lang = ctx.obj.get("lang", "en")
     client = get_client(ctx.obj.get("env_file"))
     try:
         orders = client.get_open_orders(address)
@@ -542,18 +670,18 @@ def account_orders(ctx, address: Optional[str]):
             return
 
         if not orders:
-            console.print("[yellow]No open orders[/yellow]")
+            console.print(f"[yellow]{t('order.no_orders', lang)}[/yellow]")
             return
 
-        table = Table(title="Open Orders")
-        table.add_column("Coin", style="cyan")
-        table.add_column("Side", style="green")
-        table.add_column("Size", justify="right")
-        table.add_column("Price", justify="right")
-        table.add_column("Order ID")
+        table = Table(title=t("order.title", lang))
+        table.add_column(t("order.coin", lang), style="cyan")
+        table.add_column(t("order.side", lang), style="green")
+        table.add_column(t("order.size", lang), justify="right")
+        table.add_column(t("order.price", lang), justify="right")
+        table.add_column(t("order.order_id", lang))
 
         for order in orders:
-            side = "[green]Buy[/green]" if order.get("side") == "B" else "[red]Sell[/red]"
+            side = f"[green]{t('order.buy', lang)}[/green]" if order.get("side") == "B" else f"[red]{t('order.sell', lang)}[/red]"
             table.add_row(
                 order.get("coin", "N/A"),
                 side,
@@ -573,6 +701,7 @@ def account_orders(ctx, address: Optional[str]):
 @click.pass_context
 def account_fills(ctx, address: Optional[str], limit: int):
     """Get recent fills."""
+    lang = ctx.obj.get("lang", "en")
     client = get_client(ctx.obj.get("env_file"))
     try:
         fills = client.get_user_fills(address)[:limit]
@@ -582,19 +711,19 @@ def account_fills(ctx, address: Optional[str], limit: int):
             return
 
         if not fills:
-            console.print("[yellow]No fills found[/yellow]")
+            console.print(f"[yellow]{t('fill.no_fills', lang)}[/yellow]")
             return
 
-        table = Table(title=f"Recent Fills [{get_timezone_str()}]")
-        table.add_column("Time")
-        table.add_column("Coin", style="cyan")
-        table.add_column("Side", style="green")
-        table.add_column("Size", justify="right")
-        table.add_column("Price", justify="right")
-        table.add_column("PNL", justify="right")
+        table = Table(title=f"{t('fill.title', lang)} [{get_timezone_str()}]")
+        table.add_column(t("fill.time", lang))
+        table.add_column(t("fill.coin", lang), style="cyan")
+        table.add_column(t("fill.side", lang), style="green")
+        table.add_column(t("fill.size", lang), justify="right")
+        table.add_column(t("fill.price", lang), justify="right")
+        table.add_column(t("fill.pnl", lang), justify="right")
 
         for fill in fills:
-            side = "[green]Buy[/green]" if fill.get("side") == "B" else "[red]Sell[/red]"
+            side = f"[green]{t('order.buy', lang)}[/green]" if fill.get("side") == "B" else f"[red]{t('order.sell', lang)}[/red]"
             table.add_row(
                 format_timestamp(fill.get("time", 0)),
                 fill.get("coin", "N/A"),

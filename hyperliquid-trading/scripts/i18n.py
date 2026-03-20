@@ -114,18 +114,4 @@ def detect_language() -> str:
     if env_lang and env_lang in SUPPORTED_LANGUAGES:
         return env_lang
 
-    # Try to detect from system locale
-    import locale
-
-    try:
-        system_locale = locale.getdefaultlocale()[0]
-        if system_locale:
-            # Map locale to supported language
-            if system_locale.startswith("zh_CN") or system_locale.startswith("zh-CN"):
-                return "zh-CN"
-            elif system_locale.startswith("zh_TW") or system_locale.startswith("zh-TW"):
-                return "zh-CN"  # Use simplified Chinese for now
-    except Exception:
-        pass
-
     return DEFAULT_LANGUAGE

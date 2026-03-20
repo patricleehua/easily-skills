@@ -89,6 +89,20 @@
     "candles": "Candlestick Data",
     "context": "Asset Context"
   },
+  "calc": {
+    "title": "Size Calculation for {coin}",
+    "input_amount": "Input Amount",
+    "calculated_size": "Calculated Size",
+    "notional_value": "Notional Value",
+    "size_decimals": "Size Decimals",
+    "min_size": "Min Size",
+    "min_notional": "Min Notional",
+    "meets_minimum": "Size meets minimum requirements",
+    "below_minimum": "Size below minimum ({size} {coin})",
+    "tip_increase": "Tip: Increase amount or leverage to meet minimum",
+    "high_leverage_warning": "Warning: High leverage ({leverage}x): Liquidation risk increased",
+    "extreme_leverage_warning": "Warning: Very high leverage ({leverage}x): Extreme liquidation risk!"
+  },
   "staking": {
     "title": "Staking",
     "validators": "Validators",

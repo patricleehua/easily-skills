@@ -89,6 +89,20 @@
     "candles": "K线数据",
     "context": "资产参数"
   },
+  "calc": {
+    "title": "{coin} 仓位计算",
+    "input_amount": "输入金额",
+    "calculated_size": "计算数量",
+    "notional_value": "名义价值",
+    "size_decimals": "数量小数位",
+    "min_size": "最小数量",
+    "min_notional": "最小名义价值",
+    "meets_minimum": "数量满足最低要求",
+    "below_minimum": "数量低于最低限制 ({size} {coin})",
+    "tip_increase": "提示: 增加金额或杠杆以满足最低要求",
+    "high_leverage_warning": "警告: 高杠杆 ({leverage}x): 清算风险增加",
+    "extreme_leverage_warning": "警告: 极高杠杆 ({leverage}x): 清算风险极高!"
+  },
   "staking": {
     "title": "质押",
     "validators": "验证者",

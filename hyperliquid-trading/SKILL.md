@@ -1,216 +1,244 @@
 ---
 name: hyperliquid-trading
-description: |
-  Use this skill when the user asks to query Hyperliquid market data, execute trades, manage account, set leverage, transfer/withdraw funds, or stake HYPE tokens.
-  TRIGGER when: user mentions Hyperliquid/HL, asks for crypto prices (BTC/ETH/SOL etc.), wants to place orders, check positions, funding rates, or perform trading operations via CLI.
-  DO NOT use for: general crypto discussions, price analysis without trading intent, or questions unrelated to Hyperliquid DEX.
-license: Proprietary. LICENSE.txt has complete terms
-category: finance
-tags: [trading, dex, cli, hyperliquid, derivatives]
+description: use when working with hyperliquid through the hl cli for market data, account state, order execution, leverage changes, transfers, withdrawals, or hype staking. triggers include checking prices, positions, orders, fills, funding, order books, candles, placing or cancelling trades, closing positions, setting leverage, or moving funds on hyperliquid. do not use for general crypto discussion, discretionary market commentary, or non-hyperliquid workflows.
 ---
 
+# Hyperliquid Trading
 
-## 角色
+Use this skill to operate the `hl` CLI safely and consistently for Hyperliquid.
 
-你是一个 Hyperliquid DEX 交易助手，通过命令行工具 `hl` 帮助用户执行市场查询和交易操作。
+## Permissions
 
-## 权限说明
+Read-only requests require `HL_ACCOUNT_ADDRESS`.
 
-| 操作类型 | 需要配置           | 说明                     |
-| -------- | ------------------ | ------------------------ |
-| 只读查询 | HL_ACCOUNT_ADDRESS | 查余额、持仓、订单、价格 |
-| 交易操作 | HL_SECRET_KEY      | 买入、卖出、平仓、撤单   |
-| 资金操作 | HL_SECRET_KEY      | 转账、提现               |
-| 质押操作 | HL_SECRET_KEY      | HYPE 质押/解除           |
+State-changing requests require `HL_SECRET_KEY`, including:
+- placing or cancelling orders
+- closing positions
+- setting leverage
+- transfers or withdrawals
+- staking or unstaking HYPE
 
-## 任务流程
+If the required credential is missing, stop and explain what is needed.
 
-### 1. 理解意图
+## Request Classification
 
-判断用户需要哪类操作：
+Classify the user request into one of these categories:
 
-- **市场查询**：价格、订单簿、资金费率、K线
-- **账户查询**：余额、持仓、订单、成交记录
-- **交易操作**：买入、卖出、平仓、撤单
-- **杠杆管理**：设置杠杆、调整保证金
-- **资金操作**：转账、提现
-- **质押操作**：HYPE 质押、解除质押
+1. market data
+   - price, order book, funding, candles, market context
 
-### 2. 安全检查（交易前必做）
+2. account state
+   - balance, equity, positions, open orders, fills
 
-执行交易前必须：
+3. trade execution
+   - buy, sell, close, cancel, cancel-all
 
-1. **确认参数**：向用户确认币种、数量、方向、价格
-2. **显示当前状态**：当前价格、现有持仓
-3. **估算成本**：计算预估花费/收益
-4. **仓位警告**：若交易额 > 账户权益 20%，发出警告
-5. **价格检查**：限价单价格偏离市价 >5% 时提醒用户
+4. leverage management
+   - set leverage, cross/isolated changes
 
-### 3. 执行步骤
+5. funds operations
+   - transfer, withdraw
 
-#### 查询价格
+6. staking
+   - delegate, undelegate HYPE
 
-```bash
-hl market prices <COIN> -n mainnet
-```
+Read `references/commands.md` for exact command syntax.
 
-#### 条件交易
+## Non-Negotiable Rules
 
-当用户给出条件（如"价格低于 X 则买入 Y"）：
+These rules are mandatory. Do not skip them.
 
-1. 先查询当前价格
-2. 判断是否满足条件
-3. 若满足，计算数量 = 金额 / 价格
-4. 执行交易
+### 1. Never estimate order size from a USD amount
+If the user specifies trade size in USD terms, always calculate size with `hl calc size`.
+Do not infer or approximate quantity from market price.
 
-#### 买入/卖出
+Required flow:
+1. run `hl calc size`
+2. read `calculated_size`
+3. verify `meets_minimum`
+4. show the calculated result to the user
+5. only execute after explicit confirmation
 
-```bash
-# 市价买入（跳过确认）
-hl trade buy <COIN> <SIZE> -y
+### 2. Always gather context before any state-changing action
+Before any trade, leverage change, transfer, withdrawal, or staking action, always gather the relevant context first.
 
-# 限价买入
-hl trade buy <COIN> <SIZE> -p <PRICE>
+At minimum:
+- for trades: current market price and current account state
+- for close-position requests: current position direction and size
+- for leverage changes: current market context and leverage limits
+- for transfers and withdrawals: destination, amount, whether the destination is clearly provided, and network/environment if relevant
+- for staking: validator, amount, and action type
 
-# 卖出
-hl trade sell <COIN> <SIZE> -p <PRICE>
-```
+Do this even if the user did not explicitly ask for the extra information, because it is required for safe execution.
 
-#### 设置杠杆（交易前建议先设置）
+### 3. Never execute a state-changing action without explicit confirmation
+Do not execute any state-changing action unless the user has clearly confirmed the exact action.
 
-```bash
-hl leverage set <COIN> <VALUE> [--cross]
-```
+Before asking for confirmation, restate the exact action in plain language.
 
-#### 查看持仓/账户
+This applies to:
+- buy / sell / close
+- cancel / cancel-all
+- leverage changes
+- transfers / withdrawals
+- staking / unstaking
 
-```bash
-hl account state
-hl account orders
-```
+Confirmation must restate the important parameters relevant to the action, such as:
+- coin
+- side
+- size
+- order type
+- price if limit order
+- leverage if relevant
+- destination address for transfer/withdrawal
+- validator and amount for staking
 
-### 4. 错误处理
+Do not use the -y parameter unless the user is very explicit that you can use it. Do not execute any irreversible or state-changing commands before the user explicitly confirms the operation.
 
-| 错误                 | 解决方案                            |
-| -------------------- | ----------------------------------- |
-| Address required     | 设置 HL_ACCOUNT_ADDRESS 环境变量    |
-| Private key required | 交易操作需要设置 HL_SECRET_KEY      |
-| Unknown coin         | 用 `hl market context` 查看可用币种 |
-| 余额不足             | 提示充值或减少交易量                |
-| 网络错误             | 检查网络连接，重试                  |
-| 交易失败             | 最多重试 3 次，仍失败则告警用户     |
+### 4. Do not automatically retry state-changing actions
+If a trade, transfer, withdrawal, leverage update, cancellation, or staking action fails:
+- report the error
+- explain likely causes
+- suggest the next step
+- do not retry automatically
 
-**注意**：交易失败不要自动重试，先告知用户错误原因。
+### 5. Risk warnings are mandatory
+Warn the user before execution when any of the following applies:
+- trade notional appears large relative to account equity
+- leverage is high
+- limit price is far from current market price
+- implied slippage is unusually high
+- withdrawal or transfer destination should be double-checked
 
-## 工作流示例
+Do not skip warnings just because the operation is simple to execute.
 
-### 查看组合
+## Mandatory Risk Thresholds
 
-1. `hl account state` 获取总权益
-2. `hl account orders` 查看挂单
-3. 汇总输出：权益、持仓及盈亏、挂单
+Use these thresholds as mandatory warning rules.
 
-### 买入操作
+### Trade size warning
+Warn if requested trade notional appears to be greater than 20% of account equity.
 
-1. `hl market prices <COIN>` 获取当前价格
-2. `hl account state` 确认余额充足
-3. 向用户确认："市价买入 X 数量？当前价格 $Y，预估花费 $Z"
-4. 执行 `hl trade buy <COIN> <SIZE> -y`
-5. 报告执行结果
+### Leverage warning
+Warn clearly when:
+- leverage >= 10x: high risk
+- leverage >= 20x: very high risk and requires especially explicit confirmation
+- leverage >= 40x: extreme risk and requires especially explicit confirmation
 
-### 条件交易
+For leverage >= 20x, do not execute on the same turn as the initial request unless the user explicitly confirms after the warning.
+For leverage >= 40x, require an especially explicit confirmation after clearly restating the leverage, coin, and risk.
 
-1. `hl market prices <COIN>` 获取价格
-2. 判断是否满足条件
-3. 若满足，计算数量并确认
-4. 执行交易
-5. 报告结果
+These warnings are mandatory even if the user directly requested the leverage value.
 
-### 平仓操作
+Never infer that a leverage increase is safe to execute without confirmation just because it may reduce margin requirements or appear operationally simple.
 
-1. `hl account state` 获取当前持仓方向和数量
-2. 多头用 sell，空头用 buy
-3. 执行平仓
-4. 报告结果
+### Limit price deviation
+Warn if the limit price differs from the current market price by more than 5%.
 
-## 快速命令参考
+### Market-order failure fallback
+If a market order fails and liquidity or volatility may be the cause:
+- explain the likely reason
+- inspect the order book if needed
+- suggest a limit order if appropriate
+- do not place the fallback order automatically without confirmation
 
-| 场景       | 命令                                            |
-| ---------- | ----------------------------------------------- |
-| 查价格     | `hl market prices <COIN> -n mainnet`            |
-| 查持仓     | `hl account state`                              |
-| 查挂单     | `hl account orders`                             |
-| 查成交     | `hl account fills -l 20`                        |
-| 市价买入   | `hl trade buy <COIN> <SIZE> -y`                 |
-| 限价买入   | `hl trade buy <COIN> <SIZE> -p <PRICE>`         |
-| 平仓       | `hl trade close <COIN>`                         |
-| 设置杠杆   | `hl leverage set <COIN> <VALUE>`                |
-| 查资金费率 | `hl market funding <COIN>`                      |
-| 查订单簿   | `hl market book <COIN>`                         |
-| 查 K 线    | `hl market candles <COIN> -i 1h -H 24`          |
-| 撤销订单   | `hl trade cancel <COIN> <ORDER_ID>`             |
-| 撤销全部   | `hl trade cancel-all -y`                        |
-| 转账       | `hl transfer send <ADDRESS> <AMOUNT>`           |
-| 提现       | `hl transfer withdraw <ADDRESS> <AMOUNT> -y`    |
-| 质押 HYPE  | `hl staking delegate <VALIDATOR> <AMOUNT> -y`   |
-| 解除质押   | `hl staking undelegate <VALIDATOR> <AMOUNT> -y` |
+## Standard Workflow
 
-## 环境配置
+### Market data requests
+Execute the requested read-only command directly and summarize the result clearly.
 
-| 变量名             | 说明                          | 默认值  |
-| ------------------ | ----------------------------- | ------- |
-| HL_NETWORK         | 网络                          | testnet |
-| HL_ACCOUNT_ADDRESS | 钱包地址                      | -       |
-| HL_SECRET_KEY      | 私钥                          | -       |
-| HL_API_SECRET_KEY  | API 钱包私钥                  | 可选    |
-| HL_LOG_LEVEL       | 日志级别                      | INFO    |
-| HL_LANGUAGE        | 表格渲染语言设置: en 或 zh-CN | en      |
+### Account state requests
+Execute the requested read-only command directly and summarize:
+- equity / available balance when relevant
+- positions and unrealized PnL when relevant
+- open orders or fills when relevant
 
-配置方式（二选一）：
+### Trade execution requests
+Follow this exact sequence:
 
-**方式一：.env 文件**
+1. identify side, coin, size basis, order type, and any conditions
+2. if size is given in USD, run `hl calc size`
+3. fetch current market price
+4. fetch relevant account state
+5. apply risk checks
+6. present a concise execution summary including:
+   - coin
+   - side
+   - calculated size or requested size
+   - current price
+   - estimated notional
+   - any warnings
+7. ask for explicit confirmation
+8. only after confirmation, execute the requested command
+9. report the result clearly
 
-```bash
-hl init  # 交互式创建
-```
+Do not skip steps 2 through 7.
+Do not execute the trade on the initial request unless the user has explicitly confirmed after seeing the summary and warnings.
 
-**方式二：系统环境变量**
+### Close-position requests
+1. inspect current position
+2. determine the correct closing side and size
+3. summarize the close action in plain language
+4. ask for explicit confirmation
+5. only after confirmation, execute the close action
+6. report the result
 
-```bash
-# Windows
-set HL_NETWORK=mainnet
-set HL_ACCOUNT_ADDRESS=0x...
-set HL_SECRET_KEY=0x...
+### Leverage requests
+Treat every leverage change as a state-changing action that requires explicit confirmation before execution.
 
-# Unix/Mac
-export HL_NETWORK=mainnet
-export HL_ACCOUNT_ADDRESS=0x...
-export HL_SECRET_KEY=0x...
-```
+Follow this exact sequence:
+1. identify the coin and requested leverage
+2. check current market context and leverage limits
+3. apply leverage risk warnings
+4. restate the exact leverage change in plain language
+5. ask for explicit confirmation
+6. only after confirmation, execute the leverage command
+7. report the result
 
-## 多账号支持
+For leverage >= 20x, the warning and confirmation step is mandatory and cannot be skipped.
+Do not execute leverage changes immediately, even if the change appears operationally simple or reduces margin requirements.
 
-```bash
-hl -e .env.prod trade buy BTC 0.01 -y
-hl -e .env.test account state
-```
+### Funds and staking requests
+Treat these as high-risk state-changing actions.
 
-## 常用选项
+Always restate:
+- destination or validator
+- amount
+- network/environment when relevant
 
-```bash
--e /path/to/.env   # 指定环境文件
--n mainnet|testnet # 指定网络
--y, --yes          # 跳过确认
--v                 # 详细日志
---json, -j         # JSON 输出
---lang, -l         # 设置表格输出语言  zh-CN/en
-```
+For transfers and withdrawals, if the destination is missing or ambiguous, stop and ask the user to provide or confirm it clearly.
 
-## 约束
+Then ask for explicit confirmation before execution.
 
-1. **安全第一**：交易前必须向用户确认参数
-2. **仓位警告**：大额交易（>20% 权益）必须警告
-3. **价格检查**：限价偏离市价 >5% 必须提醒
-4. **私钥安全**：永远不要读取或泄露私钥
-5. **重试限制**：交易失败最多 3 次，失败后告知用户
-6. **小额优先**：首次使用建议小额测试
+Do not execute transfers, withdrawals, staking, or unstaking immediately.
+
+## Reference Guide
+
+Use these files only when needed:
+
+- `references/commands.md`
+  - exact CLI commands and common syntax patterns
+
+- `references/examples.md`
+  - example workflows for common user requests
+
+- `references/env.md`
+  - environment variables, networks, env files, and multi-account usage
+
+## Response Style
+
+For read-only responses:
+- be concise
+- summarize the key numbers first
+- include relevant supporting details
+
+For state-changing responses before execution:
+- summarize the intended action in one compact block
+- include the parameters that matter
+- include any warnings
+- ask for explicit confirmation
+
+For execution results:
+- say whether it succeeded
+- report the key returned fields
+- mention anything the user should verify next

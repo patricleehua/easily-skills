@@ -24,6 +24,7 @@ A powerful command-line trading tool for Hyperliquid DEX, built with Python SDK.
 ### Features
 
 - **Market Data**: Real-time prices, order book, asset info, funding rates, K-line data
+- **Position Calculator**: Convert USD amount to token size with leverage support
 - **Account Management**: Balance, positions, orders, trade history, funding fees
 - **Trading Operations**: Place/cancel/modify orders, market/limit orders
 - **Leverage Management**: Adjust leverage, margin operations (cross/isolated)
@@ -80,6 +81,10 @@ uv run hl market funding ETH -n mainnet -l 5
 # Get K-line data
 uv run hl market candles BTC -i 1h -H 24 -n mainnet
 
+# Calculate position size (USD to token)
+uv run hl calc size BTC 20 -n mainnet                  # $20 = ? BTC
+uv run hl calc size SOL 100 --leverage 5 -n mainnet    # $100 + 5x leverage
+
 # Check account state
 uv run hl account state
 
@@ -104,6 +109,7 @@ uv run hl transfer send <ADDRESS> 100 --token USDC
 # JSON output (for scripting)
 uv run hl --json market prices BTC ETH
 uv run hl -j account state
+uv run hl -j calc size BTC 20 -n mainnet
 
 # Staking operations
 uv run hl staking validators -l 10
@@ -112,6 +118,16 @@ uv run hl staking delegate <VALIDATOR_ADDRESS> 100
 ```
 
 ### Command Reference
+
+#### Calculator (`calc`)
+
+| Command | Description |
+|---------|-------------|
+| `hl calc size <COIN> <USD>` | Calculate position size from USD amount |
+| `hl calc size <COIN> <USD> -l <N>` | With leverage multiplier |
+| `hl calc size <COIN> <USD> -n mainnet` | Specify network |
+
+> **Note**: `-j/--json` is a global option, place it before `calc`: `hl -j calc size BTC 20`
 
 #### Market Data (`market`)
 
@@ -235,6 +251,7 @@ Supported languages: `en` (English), `zh-CN` (简体中文)
 ### 功能特性
 
 - **市场数据**: 实时价格、订单簿、资产信息、资金费率、K线数据
+- **仓位计算器**: USD金额转代币数量，支持杠杆计算
 - **账户管理**: 余额、持仓、订单、成交历史、资金费用
 - **交易功能**: 下单、撤单、修改订单、市价/限价单
 - **杠杆管理**: 调整杠杆、保证金操作（全仓/逐仓）
@@ -290,6 +307,10 @@ uv run hl market funding ETH -n mainnet -l 5
 # 获取K线数据
 uv run hl market candles BTC -i 1h -H 24 -n mainnet
 
+# 计算仓位大小（USD转代币数量）
+uv run hl calc size BTC 20 -n mainnet                  # $20 = ? BTC
+uv run hl calc size SOL 100 --leverage 5 -n mainnet    # $100 + 5倍杠杆
+
 # 查看账户状态
 uv run hl account state
 
@@ -314,6 +335,7 @@ uv run hl transfer send <ADDRESS> 100 --token USDC
 # JSON输出（便于脚本化）
 uv run hl --json market prices BTC ETH
 uv run hl -j account state
+uv run hl -j calc size BTC 20 -n mainnet
 
 # 质押操作
 uv run hl staking validators -l 10
@@ -322,6 +344,16 @@ uv run hl staking delegate <验证者地址> 100
 ```
 
 ### 命令速查
+
+#### 计算器 (`calc`)
+
+| 命令 | 说明 |
+|------|------|
+| `hl calc size <COIN> <USD>` | USD金额转代币数量 |
+| `hl calc size <COIN> <USD> -l <N>` | 带杠杆倍数计算 |
+| `hl calc size <COIN> <USD> -n mainnet` | 指定网络 |
+
+> **注意**: `-j/--json` 是全局选项，需放在 `calc` 之前: `hl -j calc size BTC 20`
 
 #### 市场数据 (`market`)
 
