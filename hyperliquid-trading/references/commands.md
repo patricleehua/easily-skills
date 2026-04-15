@@ -113,6 +113,17 @@ hl account state
 hl account state -a <ADDRESS>        # Query specific address
 ```
 
+### Export Positions to YAML
+
+Export all positions in a structured YAML format for external systems or analysis.
+
+```bash
+hl account export -o positions.yaml  # Save to file
+hl account export --include-empty    # Include symbols with no position
+hl -j account export                 # Output as JSON instead
+```
+
+
 ### Open Orders
 
 ```bash

@@ -10,7 +10,7 @@ wheels/
 .venv
 .env
 
-
+hyperliquid-trading
 
 node_modules
 **/node_modules/

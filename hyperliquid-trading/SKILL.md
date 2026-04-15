@@ -28,7 +28,7 @@ Classify the user request into one of these categories:
    - price, order book, funding, candles, market context
 
 2. account state
-   - balance, equity, positions, open orders, fills
+   - balance, equity, positions, open orders, fills, export positions
 
 3. trade execution
    - buy, sell, close, cancel, cancel-all

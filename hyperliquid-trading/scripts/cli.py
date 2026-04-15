@@ -810,6 +810,118 @@ def account_rewards(ctx, address: Optional[str]):
         client.close()
 
 
+@account.command(name="export")
+@click.option("--address", "-a", help="Address to query")
+@click.option("--output", "-o", help="Output file path (default: stdout)")
+@click.option("--include-empty", is_flag=True, help="Include symbols with no position")
+@click.pass_context
+def account_export(ctx, address: Optional[str], output: Optional[str], include_empty: bool):
+    """Export positions to YAML format.
+
+    Examples:
+        hl account export
+        hl account export -o positions.yaml
+        hl account export --include-empty
+        hl -j account export
+    """
+    import yaml
+
+    lang = ctx.obj.get("lang", "en")
+    client = get_client(ctx.obj.get("env_file"), require_auth=False)
+    try:
+        # Get account state
+        state = client.get_user_state(address)
+
+        # Get current prices for all coins
+        prices = client.get_all_mids()
+
+        margin = state.get("marginSummary", {})
+        account_value = float(margin.get("accountValue", 0))
+
+        # Build symbols list
+        symbols = []
+        positions = state.get("assetPositions", [])
+
+        for pos in positions:
+            p = pos.get("position", {})
+            szi = float(p.get("szi", 0))
+            coin = p.get("coin", "N/A")
+
+            # Skip empty positions unless include_empty is set
+            if szi == 0 and not include_empty:
+                continue
+
+            entry_px = float(p.get("entryPx", 0))
+            pos_val = float(p.get("positionValue", 0))
+            pnl = float(p.get("unrealizedPnl", 0))
+            roe = float(p.get("returnOnEquity", 0))
+            liq_px = float(p.get("liquidationPx", 0))
+            margin_used = float(p.get("marginUsed", 0))
+
+            lev = p.get("leverage", {})
+            lev_val = int(lev.get("value", 0)) if lev.get("value") else 0
+
+            # Get current price from prices
+            current_price = float(prices.get(coin, 0)) if coin in prices else entry_px
+
+            # Calculate margin ratio
+            margin_ratio = (margin_used / account_value) if account_value > 0 else 0
+
+            # Determine side
+            if szi > 0:
+                side = "long"
+            elif szi < 0:
+                side = "short"
+            else:
+                side = "none"
+
+            # Calculate unrealized PnL percentage
+            if entry_px > 0 and side != "none":
+                if side == "long":
+                    pnl_pct = ((current_price - entry_px) / entry_px) * 100
+                else:
+                    pnl_pct = ((entry_px - current_price) / entry_px) * 100
+            else:
+                pnl_pct = 0
+
+            symbol_data = {
+                "symbol": f"{coin}/USDT",
+                "position": {
+                    "has_position": szi != 0,
+                    "side": side,
+                    "size": abs(szi),
+                    "entry_price": entry_px,
+                    "current_price": current_price,
+                    "leverage": lev_val,
+                    "unrealized_pnl": pnl,
+                    "unrealized_pnl_pct": round(pnl_pct, 2),
+                    "liquidation_price": liq_px if liq_px > 0 else 0,
+                    "margin_used": margin_used,
+                    "margin_ratio": round(margin_ratio, 4),
+                }
+            }
+
+            symbols.append(symbol_data)
+
+        result = {"symbols": symbols}
+
+        if ctx.obj.get("output_json"):
+            output_result(ctx, result)
+            return
+
+        # Output YAML
+        yaml_content = yaml.dump(result, allow_unicode=True, default_flow_style=False, sort_keys=False)
+
+        if output:
+            Path(output).write_text(yaml_content, encoding="utf-8")
+            console.print(f"[green]{t('common.success', lang)}: {output}[/green]")
+        else:
+            console.print(yaml_content)
+
+    finally:
+        client.close()
+
+
 # ==================== Staking Commands ====================
 
 @cli.group()
