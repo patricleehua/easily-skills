@@ -1,12 +1,12 @@
 ---
 name: v36-api-tools
-description: Execute v36-api CLI scripts for image generation and editing via NanoBanana API. Use this skill when the user asks to generate images from text prompts, edit images with prompts, use NanoBanana/nano-banana-pro models, or requests any v36-api related operations. Triggers on mentions of v36-api, nanobanana, text-to-image, image-to-image, or when user wants to run v36 CLI scripts.
-tags: [image-generation, nanobanana, v36-api, cli]
+description: Execute v36-api CLI scripts for image generation and editing via NanoBanana / GPT-Image-2 API. Use this skill when the user asks to generate images from text prompts, edit images with prompts, use NanoBanana/nano-banana-pro/gpt-image-2 models, or requests any v36-api related operations. Triggers on mentions of v36-api, nanobanana, gpt-image-2, text-to-image, image-to-image, or when user wants to run v36 CLI scripts.
+tags: [image-generation, nanobanana, gpt-image-2, v36-api, cli]
 ---
 
 # v36-api-tools
 
-通过 CLI 脚本调用 v36-api 接口，当前支持 NanoBanana 图片生成与编辑。
+通过 CLI 脚本调用 v36-api 接口，当前支持 NanoBanana 和 GPT-Image-2 图片生成与编辑。
 
 ## 环境要求
 
@@ -67,6 +67,48 @@ python scripts/v36-nanobanana-cli.py edit "<编辑提示词>" --model nano-banan
 - **nano-banana / gemini-2.5 系列**: `--size "2:3"` 传比例
 - **pro / gemini-3+ 系列**: `--size 4K --aspect-ratio "16:9"` 传分辨率+比例
 - **模型名带 -2k/-4k 后缀的**: 不需要传 aspect_ratio，尺寸已固定，只需传比例
+
+### GPT-Image-2 CLI (gpt-image-2-chat-cli)
+
+脚本路径: `scripts/v36-gpt-image-2-chat-cli.py`
+
+走 `/v1/chat/completions` 端点，默认流式输出，实时显示生成进度。
+
+**文生图 (generate)**
+
+```bash
+python scripts/v36-gpt-image-2-chat-cli.py generate "<提示词>" -d <下载目录>
+```
+
+**图生图 (edit)**
+
+```bash
+python scripts/v36-gpt-image-2-chat-cli.py edit "<编辑提示词>" -d <下载目录> -- <图片1> [图片2 ...]
+```
+
+### GPT-Image-2 参数说明
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `--model` | 模型名称（见下表） | gpt-image-2-c |
+| `--max-tokens` | 最大 tokens | 3800 |
+| `--download`, `-d` | 图片下载目录 | - |
+| `--output`, `-o` | JSON 输出文件路径 | - |
+| `--no-stream` | 禁用流式输出 | 默认流式 |
+| `--token` | API Token（优先用环境变量） | - |
+| `--api-base` | API 地址 | api.gpt.ge |
+
+### GPT-Image-2 可用模型
+
+| 模型 | 说明 |
+|------|------|
+| `gpt-image-2-c` | GPT-Image-2（默认） |
+| `gpt-image-2` | GPT-Image-2 原始模型名 |
+
+### 响应格式
+
+- 流式模式下实时显示进度（`🏃 进度：xx%`），完成后输出 `![image](url)` markdown 格式的图片链接
+- 图片 URL 自动从 content 中提取，配合 `-d` 参数下载到本地
 
 ## 扩展方式
 
