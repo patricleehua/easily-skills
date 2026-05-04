@@ -31,16 +31,16 @@ def _get_conn(api_base, timeout=HTTP_TIMEOUT):
 
 
 def _get_token(args):
-    token = args.token or os.getenv("NANOBANANA_TOKEN")
+    token = args.token or os.getenv("V36_API_KEY")
     if not token:
-        print("错误: 未提供 API Token。请通过 --token 参数、NANOBANANA_TOKEN 环境变量或 .env 文件提供。", file=sys.stderr)
+        print("错误: 未提供 API Token。请通过 --token 参数、V36_API_KEY 环境变量或 .env 文件提供。", file=sys.stderr)
         sys.exit(1)
     return token
 
 
 def cmd_generate(args):
     """文生图: POST /v1/images/generations (JSON)"""
-    api_base = args.api_base or os.getenv("NANOBANANA_API_BASE", API_BASE)
+    api_base = args.api_base or os.getenv("V36_API_BASE", API_BASE)
     token = _get_token(args)
 
     payload = {"model": args.model, "prompt": args.prompt}
@@ -61,7 +61,7 @@ def cmd_generate(args):
 
 def cmd_edit(args):
     """图生图: POST /v1/images/edits (multipart/form-data)"""
-    api_base = args.api_base or os.getenv("NANOBANANA_API_BASE", API_BASE)
+    api_base = args.api_base or os.getenv("V36_API_BASE", API_BASE)
     token = _get_token(args)
 
     boundary = "----NanoBananaBoundary7MA4YWxkTrZu0gW"

@@ -12,7 +12,7 @@ tags: [image-generation, nanobanana, gpt-image-2, whisper, speech-to-text, v36-a
 
 - Python 3.9+
 - 可选依赖: `python-dotenv`（用于加载 .env）
-- 环境变量: `NANOBANANA_TOKEN`（必须）, `NANOBANANA_API_BASE`（可选，默认 api.gpt.ge）
+- 环境变量: `V36_API_KEY`（必须）, `V36_API_BASE`（可选，默认 api.gpt.ge）
 
 ## 脚本调用规则
 
